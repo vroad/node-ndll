@@ -18,11 +18,29 @@ typedef std::vector<V8HandleContainerPtr> V8HandleContainerList;
 
 std::map<Isolate*, std::unique_ptr<V8HandleContainerList>> valuesMap;
 
+class TmpHandle
+{
+public:
+
+	TmpHandle(Handle<Value> value)
+		: value(value)
+	{
+	}
+
+	Handle<Value> value;
+};
+
 class V8HandleContainer
 {
 public:
 
-	std::vector<Handle<Value>> handles;
+	~V8HandleContainer()
+	{
+		for (size_t i = 0; i < handles.size(); ++i)
+			delete handles[i];
+	}
+
+	std::vector<TmpHandle*> handles;
 	std::vector<std::string> stringValues;
 	std::vector<std::wstring> wstringValues;
 };
@@ -74,11 +92,11 @@ V8HandleContainer *GetV8HandleContainer(Isolate *isolate)
 	return (*list)[list->size() - 1].get();
 }
 
-Handle<Value> *NewHandlePointer(Isolate *isolate, Handle<Value> value)
+TmpHandle *NewHandlePointer(Isolate *isolate, Handle<Value> value)
 {
 	V8HandleContainer *container = GetV8HandleContainer(isolate);
-	container->handles.push_back(value);
-	return &container->handles[container->handles.size() - 1];
+	container->handles.push_back(new TmpHandle(value));
+	return container->handles[container->handles.size() - 1];
 }
 
 

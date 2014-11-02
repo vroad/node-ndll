@@ -17,14 +17,14 @@ typedef void (hx_set_loader_t)(ResolveProc);
 
 typedef void *(func_t)();
 
-typedef Handle<Value>*(prim_multi_t)(value *, int);
-typedef Handle<Value>*(prim_0_t)();
-typedef Handle<Value>*(prim_1_t)(Handle<Value>*);
-typedef Handle<Value>*(prim_2_t)(Handle<Value>*, Handle<Value>*);
-typedef Handle<Value>*(prim_3_t)(Handle<Value>*, Handle<Value>*, Handle<Value>*);
-typedef Handle<Value>*(prim_4_t)(Handle<Value>*, Handle<Value>*, Handle<Value>*, Handle<Value>*);
-typedef Handle<Value>*(prim_5_t)(Handle<Value>*, Handle<Value>*, Handle<Value>*, Handle<Value>*, Handle<Value>*);
-typedef Handle<Value>*(prim_6_t)(Handle<Value>*, Handle<Value>*, Handle<Value>*, Handle<Value>*, Handle<Value>*, Handle<Value>*);
+typedef TmpHandle*(prim_multi_t)(TmpHandle **, int);
+typedef TmpHandle*(prim_0_t)();
+typedef TmpHandle*(prim_1_t)(TmpHandle*);
+typedef TmpHandle*(prim_2_t)(TmpHandle*, TmpHandle*);
+typedef TmpHandle*(prim_3_t)(TmpHandle*, TmpHandle*, TmpHandle*);
+typedef TmpHandle*(prim_4_t)(TmpHandle*, TmpHandle*, TmpHandle*, TmpHandle*);
+typedef TmpHandle*(prim_5_t)(TmpHandle*, TmpHandle*, TmpHandle*, TmpHandle*, TmpHandle*);
+typedef TmpHandle*(prim_6_t)(TmpHandle*, TmpHandle*, TmpHandle*, TmpHandle*, TmpHandle*, TmpHandle*);
 
 void CallNDLLFunc(const v8::FunctionCallbackInfo<v8::Value>& args);
 
@@ -98,18 +98,18 @@ void CallNDLLFunc(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	V8VMScope v8vm_scope(isolate);
 	Handle<External> data = Handle<External>::Cast(args.Data());
 	CFuncData *funcData = (CFuncData*)data->Value();
-	Handle<Value> *ret = 0;
+	TmpHandle *ret = 0;
+
+	std::vector<TmpHandle> handles;
+	for (int i = 0; i < args.Length(); ++i)
+		handles.push_back(TmpHandle(args[i]));
 	if (funcData->nargs == -1)
 	{
 		prim_multi_t *cfunc = (prim_multi_t*)funcData->func();
-		std::vector<Handle<Value>> handles;
-		std::vector<Handle<Value>*> cargs;
-		//printf("%s ", funcData->name.c_str());
-		for (int i = 0; i < args.Length(); ++i)
-			handles.push_back(args[i]);
+		std::vector<TmpHandle*> cargs;
 		for (int i = 0; i < args.Length(); ++i)
 			cargs.push_back(&handles[i]);
-		ret = cfunc((value*)cargs.data(), cargs.size());
+		ret = cfunc(cargs.data(), cargs.size());
 	}
 	else if (funcData->nargs == 0)
 	{
@@ -119,43 +119,38 @@ void CallNDLLFunc(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	else if (funcData->nargs == 1)
 	{
 		prim_1_t *cfunc = (prim_1_t*)funcData->func();
-		ret = cfunc(&args[0]);
+		ret = cfunc(&handles[0]);
 	}
 	else if (funcData->nargs == 2)
 	{
 		prim_2_t *cfunc = (prim_2_t*)funcData->func();
-		ret = cfunc(&args[0], &args[1]);
+		ret = cfunc(&handles[0], &handles[1]);
 	}
 	else if (funcData->nargs == 3)
 	{
 		prim_3_t *cfunc = (prim_3_t*)funcData->func();
-		ret = cfunc(&args[0], &args[1], &args[2]);
+		ret = cfunc(&handles[0], &handles[1], &handles[2]);
 	}
 	else if (funcData->nargs == 4)
 	{
 		prim_4_t *cfunc = (prim_4_t*)funcData->func();
-		ret = cfunc(&args[0], &args[1], &args[2], &args[3]);
+		ret = cfunc(&handles[0], &handles[1], &handles[2], &handles[3]);
 	}
 	else if (funcData->nargs == 5)
 	{
 		prim_5_t *cfunc = (prim_5_t*)funcData->func();
-		ret = cfunc(&args[0], &args[1], &args[2], &args[3], &args[4]);
+		ret = cfunc(&handles[0], &handles[1], &handles[2], &handles[3], &handles[4]);
 	}
 	else if (funcData->nargs == 6)
 	{
 		prim_6_t *cfunc = (prim_6_t*)funcData->func();
-		ret = cfunc(&args[0], &args[1], &args[2], &args[3], &args[4], &args[5]);
+		ret = cfunc(&handles[0], &handles[1], &handles[2], &handles[3], &handles[4], &handles[5]);
 	}
 
 	if (ret)
-	{
-		Handle<Value> r = *ret;
-		args.GetReturnValue().Set(r);
-	}
+		args.GetReturnValue().Set(ret->value);
 	else
-	{
 		printf("Could not call function which takes %d arguments: %s\n", funcData->nargs, funcData->name.c_str());
-	}
 }
 
 void Cleanup(void *arg)

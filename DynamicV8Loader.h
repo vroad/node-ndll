@@ -23,7 +23,7 @@ static int sgKinds = (int)(valtAbstractBase + 2);
 typedef std::map<std::string, int> KindMap;
 static KindMap sgKindMap;
 
-Handle<Value> *InternalError(const char *inMessage)
+TmpHandle *InternalError(const char *inMessage)
 {
 	fprintf(stderr, "Internal error:%s\n", inMessage);
 	Isolate *isolate = Isolate::GetCurrent();
@@ -81,10 +81,10 @@ void hx_error()
 }
 
 
-void val_throw(Handle<Value> * arg1)
+void val_throw(TmpHandle * arg1)
 {
 	Isolate *isolate = Isolate::GetCurrent();
-	isolate->ThrowException(arg1 ? *arg1 : Undefined(isolate));
+	isolate->ThrowException(arg1 ? arg1->value : Undefined(isolate));
 }
 
 
@@ -96,12 +96,12 @@ void hx_fail(char * arg1, char * arg2, int arg3)
 
 
 
-int val_type(Handle<Value> * _arg1)
+int val_type(TmpHandle * _arg1)
 {
 	if (_arg1 == 0)
 		return valtNull;
 	HandleScope handle_scope(Isolate::GetCurrent());
-	Handle<Value> arg1 = *_arg1;
+	Handle<Value> arg1 = _arg1->value;
 	if (arg1->IsUndefined() || arg1->IsNull())
 		return valtNull;
 
@@ -131,7 +131,7 @@ int val_type(Handle<Value> * _arg1)
 	return valtObject;
 }
 
-vkind val_kind(Handle<Value> * arg1)
+vkind val_kind(TmpHandle * arg1)
 {
 	HandleScope handle_scope(Isolate::GetCurrent());
 	if (arg1 == 0)
@@ -139,7 +139,7 @@ vkind val_kind(Handle<Value> * arg1)
 		InternalError("Null value has not 'kind'");
 		return 0;
 	}
-	Handle<External> h_arg1 = (*arg1).As<External>();
+	Handle<External> h_arg1 = arg1->value.As<External>();
 
 	AbstractData *data = (AbstractData *)h_arg1->Value();
 	if (!data)
@@ -152,13 +152,13 @@ vkind val_kind(Handle<Value> * arg1)
 }
 
 
-void * val_to_kind(Handle<Value> * arg1, vkind arg2)
+void * val_to_kind(TmpHandle * arg1, vkind arg2)
 {
-	if (arg1 == 0 || (arg1 && !(*arg1)->IsExternal()))
+	if (arg1 == 0 || (arg1 && arg1->value->IsExternal()))
 		return 0;
 
 	v8::HandleScope handle_scope(Isolate::GetCurrent());
-	v8::Handle<External> h_arg1 = (*arg1).As<External>();
+	v8::Handle<External> h_arg1 = arg1->value.As<External>();
 	AbstractData *data = (AbstractData *)h_arg1->Value();
 	if (!data || data->mKind != arg2)
 		return 0;
@@ -168,13 +168,13 @@ void * val_to_kind(Handle<Value> * arg1, vkind arg2)
 
 
 // don't check the 'kind' ...
-void * val_data(v8::Handle<Value> * arg1)
+void * val_data(TmpHandle * arg1)
 {
 	if (arg1 == 0)
 		return 0;
 
 	v8::HandleScope handle_scope(Isolate::GetCurrent());
-	v8::Handle<External> h_arg1 = (*arg1).As<External>();
+	v8::Handle<External> h_arg1 = arg1->value.As<External>();
 	AbstractData *data = (AbstractData *)h_arg1->Value();
 	if (!data)
 		return 0;
@@ -183,12 +183,12 @@ void * val_data(v8::Handle<Value> * arg1)
 }
 
 
-int val_fun_nargs(Handle<Value> * arg1)
+int val_fun_nargs(TmpHandle * arg1)
 {
 	if (arg1 == 0)
 		return faNotFunction;
 	v8::HandleScope handle_scope(Isolate::GetCurrent());
-	Handle<Function> func = arg1->As<Function>();
+	Handle<Function> func = arg1->value.As<Function>();
 	if (func.IsEmpty())
 		return faNotFunction;
 
@@ -199,67 +199,67 @@ int val_fun_nargs(Handle<Value> * arg1)
 
 
 
-// Extract Handle<Value> * type
-bool val_bool(Handle<Value> * arg1)
+// Extract TmpHandle * type
+bool val_bool(TmpHandle * arg1)
 {
 	if (arg1 == 0) return false;
-	return (*arg1)->BooleanValue();
+	return (*arg1->value)->BooleanValue();
 }
 
 
-int val_int(Handle<Value> * arg1)
+int val_int(TmpHandle * arg1)
 {
 	if (arg1 == 0) return 0;
-	return (*arg1)->Int32Value();
+	return (*arg1->value)->Int32Value();
 }
 
 
-double val_float(Handle<Value> * arg1)
+double val_float(TmpHandle * arg1)
 {
 	if (arg1 == 0) return 0.0;
-	return (*arg1)->NumberValue();
+	return (*arg1->value)->NumberValue();
 }
 
 
-double val_number(Handle<Value> * arg1)
+double val_number(TmpHandle * arg1)
 {
 	if (arg1 == 0) return 0.0;
-	return (*arg1)->NumberValue();
+	return (*arg1->value)->NumberValue();
 }
 
 
 
 // Create v8::Value * type
 
-Handle<Value> * alloc_null()
+TmpHandle * alloc_null()
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, Null(isolate));
 }
 
-Handle<Value> * alloc_bool(bool arg1)
+TmpHandle * alloc_bool(bool arg1)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, Boolean::New(isolate, arg1));
 }
-Handle<Value> * alloc_int(int arg1)
+TmpHandle * alloc_int(int arg1)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, Int32::New(isolate, arg1));
 }
-Handle<Value> * alloc_float(double arg1)
+TmpHandle * alloc_float(double arg1)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, Number::New(isolate, arg1));
 }
-Handle<Value> * alloc_empty_object()
+TmpHandle * alloc_empty_object()
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, Object::New(isolate));
 }
 
 
-Handle<Value> * alloc_abstract(vkind arg1, void * arg2)
+TmpHandle * alloc_abstract(vkind arg1, void * arg2)
 {
 	AbstractData *data = new AbstractData;
 	data->mKind = arg1;
@@ -269,113 +269,113 @@ Handle<Value> * alloc_abstract(vkind arg1, void * arg2)
 	return NewHandlePointer(isolate, External::New(isolate, data));
 }
 
-Handle<Value> * alloc_best_int(int arg1) { return alloc_int(arg1); }
-Handle<Value> * alloc_int32(int arg1) { return alloc_int(arg1); }
+TmpHandle * alloc_best_int(int arg1) { return alloc_int(arg1); }
+TmpHandle * alloc_int32(int arg1) { return alloc_int(arg1); }
 
 
 
 // String access
-int val_strlen(Handle<Value> * arg1)
+int val_strlen(TmpHandle * arg1)
 {
-	if (arg1 == 0 || (arg1 && !(*arg1)->IsString())) return 0;
+	if (arg1 == 0 || (arg1 && !(*arg1->value)->IsString())) return 0;
 	HandleScope handle_scope(Isolate::GetCurrent());
-	Handle<String> str = (*arg1).As<String>();
+	Handle<String> str = arg1->value.As<String>();
 	return str->Utf8Length();
 }
 
 
-const wchar_t * val_wstring(Handle<Value> * arg1)
+const wchar_t * val_wstring(TmpHandle * arg1)
 {
 	if (arg1 == 0) return L"";
 
-	return ToWChar(Isolate::GetCurrent(), *arg1);
+	return ToWChar(Isolate::GetCurrent(), arg1->value);
 }
 
 
-const char * val_string(Handle<Value> * arg1)
+const char * val_string(TmpHandle * arg1)
 {
 	if (arg1 == 0) return "";
 
-	return ToChar(Isolate::GetCurrent(), *arg1);
+	return ToChar(Isolate::GetCurrent(), arg1->value);
 }
 
 
-Handle<Value> * alloc_string(const char * arg1)
+TmpHandle * alloc_string(const char * arg1)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, String::NewFromUtf8(isolate, arg1));
 }
 
-wchar_t * val_dup_wstring(Handle<Value> *inVal)
+wchar_t * val_dup_wstring(TmpHandle *inVal)
 {
 	return (wchar_t *)val_wstring(inVal);
 }
 
-char * val_dup_string(Handle<Value> *inVal)
+char * val_dup_string(TmpHandle *inVal)
 {
 	return (char *)val_string(inVal);
 }
 
-Handle<Value> *alloc_string_len(const char *inStr, int inLen)
+TmpHandle *alloc_string_len(const char *inStr, int inLen)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, String::NewFromUtf8(isolate, inStr, String::kNormalString, inLen));
 }
 
-Handle<Value> *alloc_wstring_len(const wchar_t *inStr, int inLen)
+TmpHandle *alloc_wstring_len(const wchar_t *inStr, int inLen)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, String::NewFromTwoByte(isolate, (uint16_t*)inStr, String::kNormalString, inLen));
 }
 
 // Array access - generic
-int val_array_size(Handle<Value> * arg1)
+int val_array_size(TmpHandle * arg1)
 {
-	if (!arg1 || (arg1 && !(*arg1)->IsArray())) return 0;
+	if (!arg1 || (arg1 && !(*arg1->value)->IsArray())) return 0;
 	HandleScope handle_scope(Isolate::GetCurrent());
-	Handle<Array> array = (*arg1).As<Array>();
+	Handle<Array> array = arg1->value.As<Array>();
 	return array->Length();
 }
 
 
-Handle<Value> * val_array_i(Handle<Value> * arg1, int arg2)
+TmpHandle * val_array_i(TmpHandle * arg1, int arg2)
 {
 	if (!arg1) return 0;
 	Isolate *isolate = Isolate::GetCurrent();
 	EscapableHandleScope handle_scope(isolate);
-	Handle<Object> obj = (*arg1).As<Object>();
+	Handle<Object> obj = arg1->value.As<Object>();
 	if (obj.IsEmpty()) return 0;
 	return NewHandlePointer(isolate, handle_scope.Escape(obj->Get(arg2)));
 }
 
-void val_array_set_i(Handle<Value> * arg1, int arg2, Handle<Value> *inVal)
+void val_array_set_i(TmpHandle * arg1, int arg2, TmpHandle *inVal)
 {
 	if (!arg1) return;
 	HandleScope handle_scope(Isolate::GetCurrent());
-	Handle<Object> obj = (*arg1).As<Object>();
+	Handle<Object> obj = arg1->value.As<Object>();
 	if (obj.IsEmpty()) return;
-	obj->Set(arg2, *inVal);
+	obj->Set(arg2, inVal->value);
 }
 
-void val_array_set_size(Handle<Value> * arg1, int inLen)
+void val_array_set_size(TmpHandle * arg1, int inLen)
 {
 	if (!arg1 || inLen == 0) return;
 	HandleScope handle_scope(Isolate::GetCurrent());
-	Handle<Object> obj = (*arg1).As<Object>();
+	Handle<Object> obj = arg1->value.As<Object>();
 	if (obj.IsEmpty()) return;
 	obj->Get(inLen - 1);
 }
 
-void val_array_push(Handle<Value> * arg1, Handle<Value> *inValue)
+void val_array_push(TmpHandle * arg1, TmpHandle *inValue)
 {
-	if (!arg1 || (arg1 && !(*arg1)->IsArray())) return;
+	if (!arg1 || (arg1 && !(*arg1->value)->IsArray())) return;
 	HandleScope handle_scope(Isolate::GetCurrent());
-	Handle<Array> array = (*arg1).As<Array>();
-	array->Set(array->Length(), *inValue);
+	Handle<Array> array = arg1->value.As<Array>();
+	array->Set(array->Length(), inValue->value);
 }
 
 
-Handle<Value> * alloc_array(int arg1)
+TmpHandle * alloc_array(int arg1)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, Array::New(isolate, arg1));
@@ -412,9 +412,9 @@ value * val_array_value(v8::Value * arg1)
 
 // Byte arrays
 // The byte array may be a string or a Array<bytes> depending on implementation
-Handle<Value> *val_to_buffer(Handle<Value> * arg1)
+TmpHandle *val_to_buffer(TmpHandle * arg1)
 {
-	if (arg1 && node::Buffer::HasInstance(*arg1))
+	if (arg1 && node::Buffer::HasInstance(arg1->value))
 		return arg1;
 	return 0;
 }
@@ -456,7 +456,7 @@ void buffer_append(buffer inBuffer, const char *inStr)
 }
 
 
-int buffer_size(Handle<Value> *inBuffer)
+int buffer_size(TmpHandle *inBuffer)
 {
 	// TODO:
 	InternalError("Not implemented");
@@ -482,12 +482,12 @@ void buffer_append_char(buffer inBuffer, int inChar)
 }
 
 
-char * buffer_data(Handle<Value> *inBuffer)
+char * buffer_data(TmpHandle *inBuffer)
 {
 	if (!inBuffer)
 		return 0;
 
-	return node::Buffer::Data(*inBuffer);
+	return node::Buffer::Data(inBuffer->value);
 }
 
 
@@ -505,14 +505,14 @@ if (!arg1) \
 	return InternalError("Null Function Call"); \
 Isolate *isolate = Isolate::GetCurrent(); \
 EscapableHandleScope handle_scope(isolate); \
-Handle<Function> func = (*arg1).As<Function>(); \
+Handle<Function> func = arg1->value.As<Function>(); \
 if (func.IsEmpty()) \
 	return InternalError("Calling non-function");
 
 
 
 // Call Function 
-Handle<Value> * val_call0(Handle<Value> * arg1)
+TmpHandle * val_call0(TmpHandle * arg1)
 {
 	HANDLE_FUNC
 	
@@ -520,7 +520,7 @@ Handle<Value> * val_call0(Handle<Value> * arg1)
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
 }
 
-Handle<Value> * val_call0_traceexcept(Handle<Value> * arg1)
+TmpHandle * val_call0_traceexcept(TmpHandle * arg1)
 {
 	HANDLE_FUNC
 
@@ -536,45 +536,45 @@ Handle<Value> * val_call0_traceexcept(Handle<Value> * arg1)
 }
 
 
-Handle<Value> * val_call1(Handle<Value> * arg1, Handle<Value> * arg2)
+TmpHandle * val_call1(TmpHandle * arg1, TmpHandle * arg2)
 {
 	HANDLE_FUNC
 	
 	Local<Value> args[1];
-	args[0] = arg2 ? *arg2 : Undefined(isolate);
+	args[0] = arg2 ? arg2->value : Undefined(isolate);
 	Local<Value> result = func->Call(isolate->GetCurrentContext()->Global(), 1, args);
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
 }
 
 
-Handle<Value> * val_call2(Handle<Value> * arg1, Handle<Value> * arg2, Handle<Value> * arg3)
+TmpHandle * val_call2(TmpHandle * arg1, TmpHandle * arg2, TmpHandle * arg3)
 {
 	HANDLE_FUNC
 
 	Local<Value> args[2];
-	args[0] = arg2 ? *arg2 : Undefined(isolate);
-	args[1] = arg3 ? *arg3 : Undefined(isolate);
+	args[0] = arg2 ? arg2->value : Undefined(isolate);
+	args[1] = arg3 ? arg3->value : Undefined(isolate);
 	Local<Value> result = func->Call(isolate->GetCurrentContext()->Global(), 2, args);
 
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
 }
 
 
-Handle<Value> * val_call3(Handle<Value> * arg1, Handle<Value> * arg2, Handle<Value> * arg3, Handle<Value> * arg4)
+TmpHandle * val_call3(TmpHandle * arg1, TmpHandle * arg2, TmpHandle * arg3, TmpHandle * arg4)
 {
 	HANDLE_FUNC
 
 	Local<Value> args[3];
-	args[0] = arg2 ? *arg2 : Undefined(isolate);
-	args[1] = arg3 ? *arg3 : Undefined(isolate);
-	args[2] = arg4 ? *arg4 : Undefined(isolate);
+	args[0] = arg2 ? arg2->value : Undefined(isolate);
+	args[1] = arg3 ? arg3->value : Undefined(isolate);
+	args[2] = arg4 ? arg4->value : Undefined(isolate);
 	Local<Value> result = func->Call(isolate->GetCurrentContext()->Global(), 3, args);
 
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
 }
 
 
-Handle<Value> * val_callN(Handle<Value> * arg1, Handle<Value> * arg2)
+TmpHandle * val_callN(TmpHandle * arg1, TmpHandle * arg2)
 {
 	//TODO:
 	return 0;
@@ -597,7 +597,7 @@ if (!arg1) \
 	return InternalError("Null object call"); \
 Isolate *isolate = Isolate::GetCurrent(); \
 EscapableHandleScope handle_scope(isolate); \
-Local<Object> obj = (*arg1).As<Object>(); \
+Local<Object> obj = arg1->value.As<Object>(); \
 if (obj.IsEmpty()) \
 	return InternalError("Calling non-object member"); \
 Local<Value> member = obj->Get( Local<String>::New(isolate, sgIDToHandle[arg2]) ); \
@@ -609,7 +609,7 @@ if (func.IsEmpty()) \
 
 
 // Call object field
-Handle<Value> * val_ocall0(Handle<Value> * arg1, int arg2)
+TmpHandle * val_ocall0(TmpHandle * arg1, int arg2)
 {
 	HANDLE_MEM_FUNC
 	Local<Value> result = func->Call(obj, 0, 0);
@@ -618,39 +618,39 @@ Handle<Value> * val_ocall0(Handle<Value> * arg1, int arg2)
 }
 
 
-Handle<Value> * val_ocall1(Handle<Value> * arg1, int arg2, Handle<Value> * arg3)
+TmpHandle * val_ocall1(TmpHandle * arg1, int arg2, TmpHandle * arg3)
 {
 	HANDLE_MEM_FUNC
 
 	Local<Value> args[1];
-	args[0] = arg3 ? (*arg3) : Undefined(isolate);
+	args[0] = arg3 ? (arg3->value) : Undefined(isolate);
 	Local<Value> result = func->Call(obj, 1, args);
 
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
 }
 
 
-Handle<Value> * val_ocall2(Handle<Value> * arg1, int arg2, Handle<Value> * arg3, Handle<Value> * arg4)
+TmpHandle * val_ocall2(TmpHandle * arg1, int arg2, TmpHandle * arg3, TmpHandle * arg4)
 {
 	HANDLE_MEM_FUNC
 
 	Local<Value> args[2];
-	args[0] = arg3 ? (*arg3) : Undefined(isolate);
-	args[1] = arg4 ? (*arg4) : Undefined(isolate);
+	args[0] = arg3 ? (arg3->value) : Undefined(isolate);
+	args[1] = arg4 ? (arg4->value) : Undefined(isolate);
 	Local<Value> result = func->Call(obj, 2, args);
 
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
 }
 
 
-Handle<Value> * val_ocall3(Handle<Value> * arg1, int arg2, Handle<Value> * arg3, Handle<Value> * arg4, Handle<Value> * arg5)
+TmpHandle * val_ocall3(TmpHandle * arg1, int arg2, TmpHandle * arg3, TmpHandle * arg4, TmpHandle * arg5)
 {
 	HANDLE_MEM_FUNC
 
 	Handle<Value> args[3];
-	args[0] = arg3 ? (*arg3) : Undefined(isolate);
-	args[1] = arg4 ? (*arg4) : Undefined(isolate);
-	args[2] = arg5 ? (*arg5) : Undefined(isolate);
+	args[0] = arg3 ? (arg3->value) : Undefined(isolate);
+	args[1] = arg4 ? (arg4->value) : Undefined(isolate);
+	args[2] = arg5 ? (arg5->value) : Undefined(isolate);
 	Local<Value> result = func->Call(obj, 3, args);
 
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
@@ -658,7 +658,7 @@ Handle<Value> * val_ocall3(Handle<Value> * arg1, int arg2, Handle<Value> * arg3,
 }
 
 
-Handle<Value> * val_ocallN(Handle<Value> * arg1, int arg2, Handle<Value> * arg3)
+TmpHandle * val_ocallN(TmpHandle * arg1, int arg2, TmpHandle * arg3)
 {
 	// TODO:
 	return 0;
@@ -685,7 +685,7 @@ int val_id(const char * arg1)
 }
 
 
-void alloc_field(Handle<Value> * arg1, int arg2, Handle<Value> * arg3)
+void alloc_field(TmpHandle * arg1, int arg2, TmpHandle * arg3)
 {
 	if (!arg1 || !arg3)
 	{
@@ -694,33 +694,33 @@ void alloc_field(Handle<Value> * arg1, int arg2, Handle<Value> * arg3)
 	}
 	Isolate *isolate = Isolate::GetCurrent();
 	HandleScope handle_scope(isolate);
-	Handle<Object> obj = Handle<Object>::Cast(*arg1);
+	Handle<Object> obj = Handle<Object>::Cast(arg1->value);
 	if (obj.IsEmpty())
 	{
 		InternalError("Setting non-object member");
 		return;
 	}
-	obj->Set(Local<String>::New(isolate, sgIDToHandle[arg2]), *arg3);
+	obj->Set(Local<String>::New(isolate, sgIDToHandle[arg2]), arg3->value);
 }
 
-Handle<Value> * val_field(Handle<Value> * arg1, int arg2)
+TmpHandle * val_field(TmpHandle * arg1, int arg2)
 {
 	if (!arg1)
 		return InternalError("Null object get");
 	Isolate *isolate = Isolate::GetCurrent();
 	EscapableHandleScope handle_scope(isolate);
-	Handle<Object> obj = (*arg1).As<Object>();
+	Handle<Object> obj = arg1->value.As<Object>();
 	if (obj.IsEmpty())
 		return InternalError("Getting non-object member");
 
 	return NewHandlePointer(isolate, handle_scope.Escape(obj->Get(Local<String>::New(isolate, sgIDToHandle[arg2]))));
 }
 
-double val_field_numeric(Handle<Value> * arg1, int arg2)
+double val_field_numeric(TmpHandle * arg1, int arg2)
 {
 	HandleScope handle_scope(Isolate::GetCurrent());
-	Handle<Value> *result = val_field(arg1, arg2);
-	return result ? (*result)->NumberValue() : 0;
+	TmpHandle *result = val_field(arg1, arg2);
+	return result ? result->value->NumberValue() : 0;
 }
 
 
@@ -754,11 +754,11 @@ void * alloc_private(int arg1)
 }
 
 
-void  val_gc(Handle<Value> * arg1, hxFinalizer arg2)
+void  val_gc(TmpHandle * arg1, hxFinalizer arg2)
 {
 	if (!arg1)
 		return;
-	AbstractData *data = (AbstractData *)arg1->As<External>()->Value();
+	AbstractData *data = (AbstractData *)arg1->value.As<External>()->Value();
 	hxFinalizer(data->mPayload);
 }
 
@@ -768,7 +768,7 @@ void  val_gc_ptr(void * arg1, hxPtrFinalizer arg2)
 	InternalError("val_gc_ptr Not implemented");
 }
 
-void  val_gc_add_root(Handle<Value> **inRoot)
+void  val_gc_add_root(TmpHandle **inRoot)
 {
 	// TODO:
 	//hx::GCAddRoot(inRoot);
@@ -776,7 +776,7 @@ void  val_gc_add_root(Handle<Value> **inRoot)
 }
 
 
-void  val_gc_remove_root(Handle<Value> **inRoot)
+void  val_gc_remove_root(TmpHandle **inRoot)
 {
 	// TODO:
 	//hx::GCRemoveRoot(inRoot);
@@ -798,18 +798,15 @@ struct _gcroot
 	v8::Persistent<v8::Value> saved;
 };
 
-gcroot create_root(Handle<Value> *inValue)
+gcroot create_root(TmpHandle *inValue)
 {
 	_gcroot *r = new _gcroot;
 	if (inValue)
-	{
-		r->saved.Reset(Isolate::GetCurrent(), *inValue);
-		r->saved.MarkIndependent();
-	}
+		r->saved.Reset(Isolate::GetCurrent(), inValue->value);
 	return (gcroot)r;
 }
 
-Handle<Value> *query_root(gcroot inRoot)
+TmpHandle *query_root(gcroot inRoot)
 {
 	_gcroot *r = (_gcroot*)inRoot;
 	Isolate *isolate = Isolate::GetCurrent();
