@@ -414,8 +414,18 @@ value * val_array_value(v8::Value * arg1)
 // The byte array may be a string or a Array<bytes> depending on implementation
 TmpHandle *val_to_buffer(TmpHandle * arg1)
 {
-	if (arg1 && node::Buffer::HasInstance(arg1->value))
+	if (!arg1)
+		return 0;
+	if (arg1->value->IsObject())
+	{
+		HandleScope handle_scope(Isolate::GetCurrent());
+		Local<Object> obj = arg1->value->ToObject();
+		if (obj->HasIndexedPropertiesInExternalArrayData())
+			return arg1;
+	}
+	else if (arg1->value->IsNull() || arg1->value->IsUndefined())
 		return arg1;
+
 	return 0;
 }
 
@@ -486,8 +496,18 @@ char * buffer_data(TmpHandle *inBuffer)
 {
 	if (!inBuffer)
 		return 0;
+	if (inBuffer->value->IsObject())
+	{
+		HandleScope handle_scope(Isolate::GetCurrent());
+		Local<Object> obj = inBuffer->value->ToObject();
+		if (obj->HasIndexedPropertiesInExternalArrayData())
+			return static_cast<char*>(obj->GetIndexedPropertiesExternalArrayData());
+	}
+	else if (inBuffer->value->IsNull() || inBuffer->value->IsUndefined())
+		return 0;
 
-	return node::Buffer::Data(inBuffer->value);
+	InternalError("Invalid Buffer");
+	return 0;
 }
 
 
