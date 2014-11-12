@@ -84,6 +84,7 @@ void hx_error()
 void val_throw(TmpHandle * arg1)
 {
 	Isolate *isolate = Isolate::GetCurrent();
+	fprintf(stderr, "Exception: %s\n", *String::Utf8Value(arg1->value));
 	isolate->ThrowException(arg1 ? arg1->value : Undefined(isolate));
 }
 
