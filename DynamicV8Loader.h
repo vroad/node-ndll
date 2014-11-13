@@ -907,6 +907,7 @@ void *DynamicV8Loader(const char *inName)
 	IMPLEMENT_HERE(val_array_double)
 	IGNORE_API(val_array_float)
 	IMPLEMENT_HERE(val_array_bool)
+	IMPLEMENT_HERE(val_array_push)
 
 	IMPLEMENT_HERE(val_call0)
 	IMPLEMENT_HERE(val_call1)
