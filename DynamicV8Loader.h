@@ -775,12 +775,11 @@ void * alloc_private(int arg1)
 }
 
 
-void  val_gc(TmpHandle * arg1, hxFinalizer arg2)
+void val_gc(TmpHandle * arg1, hxFinalizer arg2)
 {
 	if (!arg1)
 		return;
-	AbstractData *data = (AbstractData *)arg1->value.As<External>()->Value();
-	hxFinalizer(data->mPayload);
+	hxFinalizer((value)arg1);
 }
 
 void  val_gc_ptr(void * arg1, hxPtrFinalizer arg2)
