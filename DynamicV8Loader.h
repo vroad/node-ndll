@@ -441,15 +441,15 @@ buffer alloc_buffer(const char *inStr)
 
 buffer alloc_buffer_len(int inLen)
 {
-	// TODO:
-	return 0;
+	Isolate *isolate = Isolate::GetCurrent();
+	Local<ArrayBuffer> ab = ArrayBuffer::New(isolate, inLen);
+	return (buffer)NewHandlePointer(isolate, Uint8Array::New(ab, 0, inLen));
 }
 
 
 value buffer_val(buffer b)
 {
-	// TODO:
-	return 0;
+	return (value)b;
 }
 
 
@@ -469,8 +469,15 @@ void buffer_append(buffer inBuffer, const char *inStr)
 
 int buffer_size(TmpHandle *inBuffer)
 {
-	// TODO:
-	InternalError("Not implemented");
+	if (!inBuffer)
+		return 0;
+	if (inBuffer->value->IsObject())
+	{
+		HandleScope handle_scope(Isolate::GetCurrent());
+		Local<Object> obj = inBuffer->value->ToObject();
+		if (obj->HasIndexedPropertiesInExternalArrayData())
+			return obj->GetIndexedPropertiesExternalArrayDataLength();
+	}
 	return 0;
 }
 
@@ -887,6 +894,7 @@ void *DynamicV8Loader(const char *inName)
 	IMPLEMENT_HERE(alloc_int32)
 	IMPLEMENT_HERE(alloc_float)
 	IMPLEMENT_HERE(alloc_string_len)
+	IMPLEMENT_HERE(alloc_wstring_len)
 	IMPLEMENT_HERE(val_array_i)
 	IMPLEMENT_HERE(val_array_set_i)
 	IMPLEMENT_HERE(val_throw)
@@ -907,12 +915,16 @@ void *DynamicV8Loader(const char *inName)
 	IGNORE_API(val_array_float)
 	IMPLEMENT_HERE(val_array_bool)
 	IMPLEMENT_HERE(val_array_push)
+	IMPLEMENT_HERE(val_array_size)
 
 	IMPLEMENT_HERE(val_call0)
 	IMPLEMENT_HERE(val_call1)
 	IMPLEMENT_HERE(val_call2)
 	IMPLEMENT_HERE(val_call3)
 
+	IMPLEMENT_HERE(val_field)
+
+	IMPLEMENT_HERE(alloc_buffer_len)
 	IMPLEMENT_HERE(alloc_array)
 	IMPLEMENT_HERE(alloc_root)
 	IMPLEMENT_HERE(alloc_abstract)
@@ -923,6 +935,7 @@ void *DynamicV8Loader(const char *inName)
 	IMPLEMENT_HERE(val_data)
 	IMPLEMENT_HERE(val_to_buffer)
 	IMPLEMENT_HERE(buffer_data)
+	IMPLEMENT_HERE(buffer_val);
 	IMPLEMENT_HERE(buffer_size)
 	IMPLEMENT_HERE(kind_share)
 
