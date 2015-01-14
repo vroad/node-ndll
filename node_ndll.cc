@@ -28,6 +28,8 @@ typedef TmpHandle*(prim_6_t)(TmpHandle*, TmpHandle*, TmpHandle*, TmpHandle*, Tmp
 
 void CallNDLLFunc(const v8::FunctionCallbackInfo<v8::Value>& args);
 
+bool initialized = false;
+
 struct CFuncData
 {
 public:
@@ -47,7 +49,7 @@ public:
 std::vector<CFuncData*> funcDataList;
 
 // Loads a function from a NDLL library.
-void V8_LoadLibrary(const v8::FunctionCallbackInfo<v8::Value>& args) {
+void Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	Isolate *isolate = args.GetIsolate();
 	HandleScope handle_scope(isolate);
 	String::Utf8Value utf8Lib(args[0]), utf8Name(args[1]);
@@ -161,11 +163,15 @@ void Cleanup(void *arg)
 	ClearSgIdToHandle();
 }
 
-void Init(Handle<Object> exports) {
+extern "C" {
+__declspec(dllexport) void Init(Handle<Object> exports) {
 	Isolate* isolate = Isolate::GetCurrent();
 	exports->Set(String::NewFromUtf8(isolate, "load_lib"),
-		FunctionTemplate::New(isolate, V8_LoadLibrary)->GetFunction());
-	node::AtExit(Cleanup);
+		FunctionTemplate::New(isolate, Load)->GetFunction());
+	if (!initialized)
+		node::AtExit(Cleanup);
+	initialized = true;
+}
 }
 
 NODE_MODULE(node_ndll, Init)
