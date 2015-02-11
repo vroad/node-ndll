@@ -1,8 +1,7 @@
 {
-  "name": "node_ndll",
+  "name": "ndll",
   "version": "0.0.0",
   "description": "NDLL wrapper for Node.js",
-  "main": "node_ndll.js",
   "private": true,
   "gypfile": true,
   "dependencies": {
