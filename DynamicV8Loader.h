@@ -80,7 +80,7 @@ void hx_error()
 }
 
 
-void val_throw(TmpHandle * arg1)
+void v8_val_throw(TmpHandle * arg1)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	fprintf(stderr, "Exception: %s\n", *String::Utf8Value(arg1->value));
@@ -88,7 +88,7 @@ void val_throw(TmpHandle * arg1)
 }
 
 
-void hx_fail(char * arg1, char * arg2, int arg3)
+void v8_hx_fail(char * arg1, char * arg2, int arg3)
 {
 	fprintf(stderr, "Terminal error %s, File %s, line %d\n", arg1, arg2, arg3);
 	exit(1);
@@ -96,7 +96,7 @@ void hx_fail(char * arg1, char * arg2, int arg3)
 
 
 
-int val_type(TmpHandle * _arg1)
+int v8_val_type(TmpHandle * _arg1)
 {
 	if (_arg1 == 0)
 		return valtNull;
@@ -131,7 +131,7 @@ int val_type(TmpHandle * _arg1)
 	return valtObject;
 }
 
-vkind val_kind(TmpHandle * arg1)
+vkind v8_val_kind(TmpHandle * arg1)
 {
 	HandleScope handle_scope(Isolate::GetCurrent());
 	if (arg1 == 0)
@@ -152,7 +152,7 @@ vkind val_kind(TmpHandle * arg1)
 }
 
 
-void * val_to_kind(TmpHandle * arg1, vkind arg2)
+void * v8_val_to_kind(TmpHandle * arg1, vkind arg2)
 {
 	if (arg1 == 0 || (arg1 && arg1->value->IsExternal()))
 		return 0;
@@ -168,7 +168,7 @@ void * val_to_kind(TmpHandle * arg1, vkind arg2)
 
 
 // don't check the 'kind' ...
-void * val_data(TmpHandle * arg1)
+void * v8_val_data(TmpHandle * arg1)
 {
 	if (arg1 == 0)
 		return 0;
@@ -200,28 +200,28 @@ int val_fun_nargs(TmpHandle * arg1)
 
 
 // Extract TmpHandle * type
-bool val_bool(TmpHandle * arg1)
+bool v8_val_bool(TmpHandle * arg1)
 {
 	if (arg1 == 0) return false;
 	return (*arg1->value)->BooleanValue();
 }
 
 
-int val_int(TmpHandle * arg1)
+int v8_val_int(TmpHandle * arg1)
 {
 	if (arg1 == 0) return 0;
 	return (*arg1->value)->Int32Value();
 }
 
 
-double val_float(TmpHandle * arg1)
+double v8_val_float(TmpHandle * arg1)
 {
 	if (arg1 == 0) return 0.0;
 	return (*arg1->value)->NumberValue();
 }
 
 
-double val_number(TmpHandle * arg1)
+double v8_val_number(TmpHandle * arg1)
 {
 	if (arg1 == 0) return 0.0;
 	return (*arg1->value)->NumberValue();
@@ -231,35 +231,35 @@ double val_number(TmpHandle * arg1)
 
 // Create v8::Value * type
 
-TmpHandle * alloc_null()
+TmpHandle * v8_alloc_null()
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, Null(isolate));
 }
 
-TmpHandle * alloc_bool(bool arg1)
+TmpHandle * v8_alloc_bool(bool arg1)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, Boolean::New(isolate, arg1));
 }
-TmpHandle * alloc_int(int arg1)
+TmpHandle * v8_alloc_int(int arg1)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, Int32::New(isolate, arg1));
 }
-TmpHandle * alloc_float(double arg1)
+TmpHandle * v8_alloc_float(double arg1)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, Number::New(isolate, arg1));
 }
-TmpHandle * alloc_empty_object()
+TmpHandle * v8_alloc_empty_object()
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, Object::New(isolate));
 }
 
 
-TmpHandle * alloc_abstract(vkind arg1, void * arg2)
+TmpHandle * v8_alloc_abstract(vkind arg1, void * arg2)
 {
 	AbstractData *data = new AbstractData;
 	data->mKind = arg1;
@@ -269,13 +269,13 @@ TmpHandle * alloc_abstract(vkind arg1, void * arg2)
 	return NewHandlePointer(isolate, External::New(isolate, data));
 }
 
-TmpHandle * alloc_best_int(int arg1) { return alloc_int(arg1); }
-TmpHandle * alloc_int32(int arg1) { return alloc_int(arg1); }
+TmpHandle * v8_alloc_best_int(int arg1) { return v8_alloc_int(arg1); }
+TmpHandle * v8_alloc_int32(int arg1) { return v8_alloc_int(arg1); }
 
 
 
 // String access
-int val_strlen(TmpHandle * arg1)
+int v8_val_strlen(TmpHandle * arg1)
 {
 	if (arg1 == 0 || (arg1 && !(*arg1->value)->IsString())) return 0;
 	HandleScope handle_scope(Isolate::GetCurrent());
@@ -284,7 +284,7 @@ int val_strlen(TmpHandle * arg1)
 }
 
 
-const wchar_t * val_wstring(TmpHandle * arg1)
+const wchar_t * v8_val_wstring(TmpHandle * arg1)
 {
 	if (arg1 == 0) return L"";
 
@@ -292,7 +292,7 @@ const wchar_t * val_wstring(TmpHandle * arg1)
 }
 
 
-const char * val_string(TmpHandle * arg1)
+const char * v8_val_string(TmpHandle * arg1)
 {
 	if (arg1 == 0) return "";
 
@@ -300,36 +300,36 @@ const char * val_string(TmpHandle * arg1)
 }
 
 
-TmpHandle * alloc_string(const char * arg1)
+TmpHandle * v8_alloc_string(const char * arg1)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, String::NewFromUtf8(isolate, arg1));
 }
 
-wchar_t * val_dup_wstring(TmpHandle *inVal)
+wchar_t * v8_val_dup_wstring(TmpHandle *inVal)
 {
-	return (wchar_t *)val_wstring(inVal);
+	return (wchar_t *)v8_val_wstring(inVal);
 }
 
-char * val_dup_string(TmpHandle *inVal)
+char * v8_val_dup_string(TmpHandle *inVal)
 {
-	return (char *)val_string(inVal);
+	return (char *)v8_val_string(inVal);
 }
 
-TmpHandle *alloc_string_len(const char *inStr, int inLen)
+TmpHandle *v8_alloc_string_len(const char *inStr, int inLen)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, String::NewFromUtf8(isolate, inStr, String::kNormalString, inLen));
 }
 
-TmpHandle *alloc_wstring_len(const wchar_t *inStr, int inLen)
+TmpHandle *v8_alloc_wstring_len(const wchar_t *inStr, int inLen)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, String::NewFromTwoByte(isolate, (uint16_t*)inStr, String::kNormalString, inLen));
 }
 
 // Array access - generic
-int val_array_size(TmpHandle * arg1)
+int v8_val_array_size(TmpHandle * arg1)
 {
 	if (!arg1 || (arg1 && !(*arg1->value)->IsArray())) return 0;
 	HandleScope handle_scope(Isolate::GetCurrent());
@@ -338,7 +338,7 @@ int val_array_size(TmpHandle * arg1)
 }
 
 
-TmpHandle * val_array_i(TmpHandle * arg1, int arg2)
+TmpHandle * v8_val_array_i(TmpHandle * arg1, int arg2)
 {
 	if (!arg1) return 0;
 	Isolate *isolate = Isolate::GetCurrent();
@@ -348,7 +348,7 @@ TmpHandle * val_array_i(TmpHandle * arg1, int arg2)
 	return NewHandlePointer(isolate, handle_scope.Escape(obj->Get(arg2)));
 }
 
-void val_array_set_i(TmpHandle * arg1, int arg2, TmpHandle *inVal)
+void v8_val_array_set_i(TmpHandle * arg1, int arg2, TmpHandle *inVal)
 {
 	if (!arg1) return;
 	HandleScope handle_scope(Isolate::GetCurrent());
@@ -357,7 +357,7 @@ void val_array_set_i(TmpHandle * arg1, int arg2, TmpHandle *inVal)
 	obj->Set(arg2, inVal->value);
 }
 
-void val_array_set_size(TmpHandle * arg1, int inLen)
+void v8_val_array_set_size(TmpHandle * arg1, int inLen)
 {
 	if (!arg1 || inLen == 0) return;
 	HandleScope handle_scope(Isolate::GetCurrent());
@@ -366,7 +366,7 @@ void val_array_set_size(TmpHandle * arg1, int inLen)
 	obj->Get(inLen - 1);
 }
 
-void val_array_push(TmpHandle * arg1, TmpHandle *inValue)
+void v8_val_array_push(TmpHandle * arg1, TmpHandle *inValue)
 {
 	if (!arg1 || (arg1 && !(*arg1->value)->IsArray())) return;
 	HandleScope handle_scope(Isolate::GetCurrent());
@@ -375,7 +375,7 @@ void val_array_push(TmpHandle * arg1, TmpHandle *inValue)
 }
 
 
-TmpHandle * alloc_array(int arg1)
+TmpHandle * v8_alloc_array(int arg1)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, Array::New(isolate, arg1));
@@ -385,24 +385,24 @@ TmpHandle * alloc_array(int arg1)
 
 // Array access - fast if possible - may return null
 // Resizing the array may invalidate the pointer
-bool * val_array_bool(v8::Value * arg1)
+bool * v8_val_array_bool(v8::Value * arg1)
 {
 	return 0;
 }
 
 
-int * val_array_int(v8::Value * arg1)
+int * v8_val_array_int(v8::Value * arg1)
 {
 	return 0;
 }
 
 
-double * val_array_double(v8::Value * arg1)
+double * v8_val_array_double(v8::Value * arg1)
 {
 	return 0;
 }
 
-value * val_array_value(v8::Value * arg1)
+value * v8_val_array_value(v8::Value * arg1)
 {
 	return 0;
 }
@@ -412,7 +412,7 @@ value * val_array_value(v8::Value * arg1)
 
 // Byte arrays
 // The byte array may be a string or a Array<bytes> depending on implementation
-TmpHandle *val_to_buffer(TmpHandle * arg1)
+TmpHandle *v8_val_to_buffer(TmpHandle * arg1)
 {
 	if (!arg1)
 		return 0;
@@ -438,7 +438,7 @@ buffer alloc_buffer(const char *inStr)
 }
 
 
-buffer alloc_buffer_len(int inLen)
+buffer v8_alloc_buffer_len(int inLen)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	Local<ArrayBuffer> ab = ArrayBuffer::New(isolate, inLen);
@@ -446,7 +446,7 @@ buffer alloc_buffer_len(int inLen)
 }
 
 
-value buffer_val(buffer b)
+value v8_buffer_val(buffer b)
 {
 	return (value)b;
 }
@@ -466,7 +466,7 @@ void buffer_append(buffer inBuffer, const char *inStr)
 }
 
 
-int buffer_size(TmpHandle *inBuffer)
+int v8_buffer_size(TmpHandle *inBuffer)
 {
 	if (!inBuffer)
 		return 0;
@@ -499,7 +499,7 @@ void buffer_append_char(buffer inBuffer, int inChar)
 }
 
 
-char * buffer_data(TmpHandle *inBuffer)
+char * v8_buffer_data(TmpHandle *inBuffer)
 {
 	if (!inBuffer)
 		return 0;
@@ -539,7 +539,7 @@ if (func.IsEmpty()) \
 
 
 // Call Function 
-TmpHandle * val_call0(TmpHandle * arg1)
+TmpHandle * v8_val_call0(TmpHandle * arg1)
 {
 	HANDLE_FUNC
 	
@@ -547,7 +547,7 @@ TmpHandle * val_call0(TmpHandle * arg1)
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
 }
 
-TmpHandle * val_call0_traceexcept(TmpHandle * arg1)
+TmpHandle * v8_val_call0_traceexcept(TmpHandle * arg1)
 {
 	HANDLE_FUNC
 
@@ -563,7 +563,7 @@ TmpHandle * val_call0_traceexcept(TmpHandle * arg1)
 }
 
 
-TmpHandle * val_call1(TmpHandle * arg1, TmpHandle * arg2)
+TmpHandle * v8_val_call1(TmpHandle * arg1, TmpHandle * arg2)
 {
 	HANDLE_FUNC
 	
@@ -574,7 +574,7 @@ TmpHandle * val_call1(TmpHandle * arg1, TmpHandle * arg2)
 }
 
 
-TmpHandle * val_call2(TmpHandle * arg1, TmpHandle * arg2, TmpHandle * arg3)
+TmpHandle * v8_val_call2(TmpHandle * arg1, TmpHandle * arg2, TmpHandle * arg3)
 {
 	HANDLE_FUNC
 
@@ -587,7 +587,7 @@ TmpHandle * val_call2(TmpHandle * arg1, TmpHandle * arg2, TmpHandle * arg3)
 }
 
 
-TmpHandle * val_call3(TmpHandle * arg1, TmpHandle * arg2, TmpHandle * arg3, TmpHandle * arg4)
+TmpHandle * v8_val_call3(TmpHandle * arg1, TmpHandle * arg2, TmpHandle * arg3, TmpHandle * arg4)
 {
 	HANDLE_FUNC
 
@@ -601,7 +601,7 @@ TmpHandle * val_call3(TmpHandle * arg1, TmpHandle * arg2, TmpHandle * arg3, TmpH
 }
 
 
-TmpHandle * val_callN(TmpHandle * arg1, TmpHandle * arg2)
+TmpHandle * v8_val_callN(TmpHandle * arg1, TmpHandle * arg2)
 {
 	//TODO:
 	return 0;
@@ -694,7 +694,7 @@ TmpHandle * val_ocallN(TmpHandle * arg1, int arg2, TmpHandle * arg3)
 
 
 // Objects access
-int val_id(const char * arg1)
+int v8_val_id(const char * arg1)
 {
 	std::string key(arg1);
 	NameToID::iterator i = sgNameToID.find(key);
@@ -712,7 +712,7 @@ int val_id(const char * arg1)
 }
 
 
-void alloc_field(TmpHandle * arg1, int arg2, TmpHandle * arg3)
+void v8_alloc_field(TmpHandle * arg1, int arg2, TmpHandle * arg3)
 {
 	if (!arg1 || !arg3)
 	{
@@ -730,7 +730,7 @@ void alloc_field(TmpHandle * arg1, int arg2, TmpHandle * arg3)
 	obj->Set(Local<String>::New(isolate, sgIDToHandle[arg2]), arg3->value);
 }
 
-TmpHandle * val_field(TmpHandle * arg1, int arg2)
+TmpHandle * v8_val_field(TmpHandle * arg1, int arg2)
 {
 	if (!arg1)
 		return InternalError("Null object get");
@@ -743,21 +743,21 @@ TmpHandle * val_field(TmpHandle * arg1, int arg2)
 	return NewHandlePointer(isolate, handle_scope.Escape(obj->Get(Local<String>::New(isolate, sgIDToHandle[arg2]))));
 }
 
-double val_field_numeric(TmpHandle * arg1, int arg2)
+double v8_val_field_numeric(TmpHandle * arg1, int arg2)
 {
 	HandleScope handle_scope(Isolate::GetCurrent());
-	TmpHandle *result = val_field(arg1, arg2);
+	TmpHandle *result = v8_val_field(arg1, arg2);
 	return result ? result->value->NumberValue() : 0;
 }
 
 
 // Abstract types
-vkind alloc_kind()
+vkind v8_alloc_kind()
 {
 	return (vkind)hxcpp_alloc_kind();
 }
 
-void kind_share(vkind *inKind, const char *inName)
+void v8_kind_share(vkind *inKind, const char *inName)
 {
 	int k = (int)(intptr_t)*inKind;
 	hxcpp_kind_share(k, inName);
@@ -767,21 +767,21 @@ void kind_share(vkind *inKind, const char *inName)
 
 
 // Garbage Collection
-void * hx_alloc(int arg1)
+void * v8_hx_alloc(int arg1)
 {
 	// TODO:
 	return 0;
 }
 
 
-void * alloc_private(int arg1)
+void * v8_alloc_private(int arg1)
 {
 	// TODO:
 	return 0;
 }
 
 
-void val_gc(TmpHandle * arg1, hxFinalizer arg2)
+void v8_val_gc(TmpHandle * arg1, hxFinalizer arg2)
 {
 	if (!arg1)
 		return;
@@ -810,12 +810,12 @@ void  val_gc_remove_root(TmpHandle **inRoot)
 }
 
 
-value *alloc_root()
+value *v8_alloc_root()
 {
 	return 0;
 }
 
-void free_root(value *inValue)
+void v8_free_root(value *inValue)
 {
 }
 
@@ -824,7 +824,7 @@ struct _gcroot
 	v8::Persistent<v8::Value> saved;
 };
 
-gcroot create_root(TmpHandle *inValue)
+gcroot v8_create_root(TmpHandle *inValue)
 {
 	_gcroot *r = new _gcroot;
 	if (inValue)
@@ -832,14 +832,14 @@ gcroot create_root(TmpHandle *inValue)
 	return (gcroot)r;
 }
 
-TmpHandle *query_root(gcroot inRoot)
+TmpHandle *v8_query_root(gcroot inRoot)
 {
 	_gcroot *r = (_gcroot*)inRoot;
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, Local<Value>::New(isolate, r->saved));
 }
 
-void destroy_root(gcroot inRoot)
+void v8_destroy_root(gcroot inRoot)
 {
 	_gcroot *r = (_gcroot*)inRoot;
 	if (r)
@@ -852,28 +852,28 @@ void destroy_root(gcroot inRoot)
 
 
 // Used for finding functions in static libraries
-int hx_register_prim(wchar_t * arg1, void* arg2)
+int v8_hx_register_prim(wchar_t * arg1, void* arg2)
 {
 	// TODO:
 	//__hxcpp_register_prim(arg1,arg2);
 	return 0;
 }
 
-void gc_enter_blocking()
+void v8_gc_enter_blocking()
 {
 }
 
-void gc_exit_blocking()
+void v8_gc_exit_blocking()
 {
 }
 
-void gc_safe_point()
+void v8_gc_safe_point()
 {
 }
 
 void * v8_empty() { return 0; }
 
-#define IMPLEMENT_HERE(x) if (!strcmp(inName,#x)) return (void *)##x;
+#define IMPLEMENT_HERE(x) if (!strcmp(inName,#x)) return (void *)v8_##x;
 #define IGNORE_API(x) if (!strcmp(inName,#x)) return (void *)v8_empty;
 
 void *DynamicV8Loader(const char *inName)
