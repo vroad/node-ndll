@@ -9,7 +9,6 @@
 
 #include "DynamicV8Loader.h"
 #include "V8VMScope.h"
-#include "Util.h"
 
 using namespace v8;
 
@@ -54,11 +53,11 @@ void Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	HandleScope handle_scope(isolate);
 	String::Utf8Value utf8Lib(args[0]), utf8Name(args[1]);
 	char lib[260];
-	sprintf_s(lib, "%s.dll", ToCString(utf8Lib));
+	sprintf_s(lib, "%s.dll", *utf8Lib);
 	HMODULE mod = LoadLibraryA(lib);
 	if (mod == NULL)
 	{
-		sprintf_s(lib, "%s.ndll", ToCString(utf8Lib));
+		sprintf_s(lib, "%s.ndll", *utf8Lib);
 		mod = LoadLibraryA(lib);
 	}
 	if (mod == NULL)
@@ -70,13 +69,13 @@ void Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	char name[260];
 	int numArgs = args[2]->Int32Value();
 	if (numArgs != -1)
-		sprintf_s(name, "%s__%d", ToCString(utf8Name), numArgs);
+		sprintf_s(name, "%s__%d", *utf8Name, numArgs);
 	else
-		sprintf_s(name, "%s__MULT", ToCString(utf8Name));
+		sprintf_s(name, "%s__MULT", *utf8Name);
 	hx_set_loader_t *dll_hx_set_loader = (hx_set_loader_t*)GetProcAddress(mod, "hx_set_loader");
 	if (!dll_hx_set_loader)
 	{
-		printf("hx_set_loader not found: %s\n", ToCString(utf8Lib));
+		printf("hx_set_loader not found: %s\n", *utf8Lib);
 		FreeLibrary(mod);
 		return;
 	}
@@ -84,11 +83,11 @@ void Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	func_t *func = (func_t*)GetProcAddress(mod, name);
 	if (!func)
 	{
-		printf("Function %s not found in %s\n", ToCString(utf8Name), ToCString(utf8Lib));
+		printf("Function %s not found in %s\n", *utf8Name, *utf8Lib);
 		FreeLibrary(mod);
 		return;
 	}
-	CFuncData *funcData = new CFuncData(mod, func, numArgs, ToCString(utf8Name));
+	CFuncData *funcData = new CFuncData(mod, func, numArgs, *utf8Name);
 	args.GetReturnValue().Set(FunctionTemplate::New(isolate, CallNDLLFunc, External::New(isolate, funcData))->GetFunction());
 	funcDataList.push_back(funcData);
 }
