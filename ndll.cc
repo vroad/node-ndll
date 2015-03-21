@@ -81,7 +81,7 @@ void Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	name += "__";
 	int numArgs = args[2]->Int32Value();
 	if (numArgs != -1)
-		name += numArgs;
+		name += std::to_string(numArgs);
 	else
 		name += "MULT";
 	hx_set_loader_t *dll_hx_set_loader;
