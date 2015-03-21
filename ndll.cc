@@ -55,14 +55,15 @@ void Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	Isolate *isolate = args.GetIsolate();
 	HandleScope handle_scope(isolate);
 	String::Utf8Value utf8Lib(args[0]), utf8Name(args[1]);
-	char lib[260];
-	sprintf_s(lib, "%s.dll", *utf8Lib);
+	std::string lib = *utf8Lib;
+	lib += ".dll";
 	std::unique_ptr<uv_lib_t> uvLib(new uv_lib_t());
 	int result;
-	if (result = uv_dlopen(lib, uvLib.get()))
+	if (result = uv_dlopen(lib.c_str(), uvLib.get()))
 	{
-		sprintf_s(lib, "%s.ndll", *utf8Lib);
-		result = uv_dlopen(lib, uvLib.get());
+		lib = *utf8Lib;
+		lib += ".ndll";
+		result = uv_dlopen(lib.c_str(), uvLib.get());
 	}
 	if (result)
 	{
@@ -70,12 +71,13 @@ void Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
 		return;
 	}
 
-	char name[260];
+	std::string name = *utf8Name;
+	name += "__";
 	int numArgs = args[2]->Int32Value();
 	if (numArgs != -1)
-		sprintf_s(name, "%s__%d", *utf8Name, numArgs);
+		name += numArgs;
 	else
-		sprintf_s(name, "%s__MULT", *utf8Name);
+		name += "MULT";
 	hx_set_loader_t *dll_hx_set_loader;
 	uv_dlsym(uvLib.get(), "hx_set_loader", (void**)&dll_hx_set_loader);
 	if (!dll_hx_set_loader)
@@ -86,7 +88,7 @@ void Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	}
 	dll_hx_set_loader(DynamicV8Loader);
 	func_t *func;
-	uv_dlsym(uvLib.get(), name, (void**)&func);
+	uv_dlsym(uvLib.get(), name.c_str(), (void**)&func);
 	if (!func)
 	{
 		printf("Function %s not found in %s\n", *utf8Name, *utf8Lib);
