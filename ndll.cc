@@ -1,9 +1,10 @@
 #include <node.h>
 #include <v8.h>
+#include <uv.h>
+
 #define IMPLEMENT_API
 #include "hx/CFFI.h"
 
-#include <windows.h>
 #include <string>
 #include <vector>
 
@@ -32,15 +33,17 @@ bool initialized = false;
 struct CFuncData
 {
 public:
-	CFuncData(HMODULE mod, func_t func, int nargs, std::string name) : mod(mod), func(func), nargs(nargs), name(name) {}
+	CFuncData(std::unique_ptr<uv_lib_t> &uvLib, func_t func, int nargs, std::string name) : func(func), nargs(nargs), name(name)
+	{
+		this->uvLib = std::move(uvLib);
+	}
 
 	~CFuncData()
 	{
-		if (mod)
-			FreeLibrary(mod);
+		uv_dlclose(uvLib.get());
 	}
 
-	HMODULE mod;
+	std::unique_ptr<uv_lib_t> uvLib;
 	func_t *func;
 	int nargs;
 	std::string name;
@@ -54,13 +57,14 @@ void Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	String::Utf8Value utf8Lib(args[0]), utf8Name(args[1]);
 	char lib[260];
 	sprintf_s(lib, "%s.dll", *utf8Lib);
-	HMODULE mod = LoadLibraryA(lib);
-	if (mod == NULL)
+	std::unique_ptr<uv_lib_t> uvLib(new uv_lib_t());
+	int result;
+	if (result = uv_dlopen(lib, uvLib.get()))
 	{
 		sprintf_s(lib, "%s.ndll", *utf8Lib);
-		mod = LoadLibraryA(lib);
+		result = uv_dlopen(lib, uvLib.get());
 	}
-	if (mod == NULL)
+	if (result)
 	{
 		printf("Could not load %s.\n", lib);
 		return;
@@ -72,22 +76,24 @@ void Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
 		sprintf_s(name, "%s__%d", *utf8Name, numArgs);
 	else
 		sprintf_s(name, "%s__MULT", *utf8Name);
-	hx_set_loader_t *dll_hx_set_loader = (hx_set_loader_t*)GetProcAddress(mod, "hx_set_loader");
+	hx_set_loader_t *dll_hx_set_loader;
+	uv_dlsym(uvLib.get(), "hx_set_loader", (void**)&dll_hx_set_loader);
 	if (!dll_hx_set_loader)
 	{
 		printf("hx_set_loader not found: %s\n", *utf8Lib);
-		FreeLibrary(mod);
+		uv_dlclose(uvLib.get());
 		return;
 	}
 	dll_hx_set_loader(DynamicV8Loader);
-	func_t *func = (func_t*)GetProcAddress(mod, name);
+	func_t *func;
+	uv_dlsym(uvLib.get(), name, (void**)&func);
 	if (!func)
 	{
 		printf("Function %s not found in %s\n", *utf8Name, *utf8Lib);
-		FreeLibrary(mod);
+		uv_dlclose(uvLib.get());
 		return;
 	}
-	CFuncData *funcData = new CFuncData(mod, func, numArgs, *utf8Name);
+	CFuncData *funcData = new CFuncData(uvLib, func, numArgs, *utf8Name);
 	args.GetReturnValue().Set(FunctionTemplate::New(isolate, CallNDLLFunc, External::New(isolate, funcData))->GetFunction());
 	funcDataList.push_back(funcData);
 }
