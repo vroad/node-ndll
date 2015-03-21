@@ -84,7 +84,7 @@ void v8_val_throw(TmpHandle * arg1)
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	fprintf(stderr, "Exception: %s\n", *String::Utf8Value(arg1->value));
-	isolate->ThrowException(arg1 ? arg1->value : Undefined(isolate));
+	isolate->ThrowException(arg1 ? arg1->value : (Handle<Value>)Undefined(isolate));
 }
 
 
@@ -568,7 +568,7 @@ TmpHandle * v8_val_call1(TmpHandle * arg1, TmpHandle * arg2)
 	HANDLE_FUNC
 	
 	Local<Value> args[1];
-	args[0] = arg2 ? arg2->value : Undefined(isolate);
+	args[0] = arg2 ? arg2->value : (Handle<Value>)Undefined(isolate);
 	Local<Value> result = func->Call(isolate->GetCurrentContext()->Global(), 1, args);
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
 }
@@ -579,8 +579,8 @@ TmpHandle * v8_val_call2(TmpHandle * arg1, TmpHandle * arg2, TmpHandle * arg3)
 	HANDLE_FUNC
 
 	Local<Value> args[2];
-	args[0] = arg2 ? arg2->value : Undefined(isolate);
-	args[1] = arg3 ? arg3->value : Undefined(isolate);
+	args[0] = arg2 ? arg2->value : (Handle<Value>)Undefined(isolate);
+	args[1] = arg3 ? arg3->value : (Handle<Value>)Undefined(isolate);
 	Local<Value> result = func->Call(isolate->GetCurrentContext()->Global(), 2, args);
 
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
@@ -592,9 +592,9 @@ TmpHandle * v8_val_call3(TmpHandle * arg1, TmpHandle * arg2, TmpHandle * arg3, T
 	HANDLE_FUNC
 
 	Local<Value> args[3];
-	args[0] = arg2 ? arg2->value : Undefined(isolate);
-	args[1] = arg3 ? arg3->value : Undefined(isolate);
-	args[2] = arg4 ? arg4->value : Undefined(isolate);
+	args[0] = arg2 ? arg2->value : (Handle<Value>)Undefined(isolate);
+	args[1] = arg3 ? arg3->value : (Handle<Value>)Undefined(isolate);
+	args[2] = arg4 ? arg4->value : (Handle<Value>)Undefined(isolate);
 	Local<Value> result = func->Call(isolate->GetCurrentContext()->Global(), 3, args);
 
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
@@ -650,7 +650,7 @@ TmpHandle * val_ocall1(TmpHandle * arg1, int arg2, TmpHandle * arg3)
 	HANDLE_MEM_FUNC
 
 	Local<Value> args[1];
-	args[0] = arg3 ? (arg3->value) : Undefined(isolate);
+	args[0] = arg3 ? (arg3->value) : (Handle<Value>)Undefined(isolate);
 	Local<Value> result = func->Call(obj, 1, args);
 
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
@@ -662,8 +662,8 @@ TmpHandle * val_ocall2(TmpHandle * arg1, int arg2, TmpHandle * arg3, TmpHandle *
 	HANDLE_MEM_FUNC
 
 	Local<Value> args[2];
-	args[0] = arg3 ? (arg3->value) : Undefined(isolate);
-	args[1] = arg4 ? (arg4->value) : Undefined(isolate);
+	args[0] = arg3 ? (arg3->value) : (Handle<Value>)Undefined(isolate);
+	args[1] = arg4 ? (arg4->value) : (Handle<Value>)Undefined(isolate);
 	Local<Value> result = func->Call(obj, 2, args);
 
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
@@ -675,9 +675,9 @@ TmpHandle * val_ocall3(TmpHandle * arg1, int arg2, TmpHandle * arg3, TmpHandle *
 	HANDLE_MEM_FUNC
 
 	Handle<Value> args[3];
-	args[0] = arg3 ? (arg3->value) : Undefined(isolate);
-	args[1] = arg4 ? (arg4->value) : Undefined(isolate);
-	args[2] = arg5 ? (arg5->value) : Undefined(isolate);
+	args[0] = arg3 ? (arg3->value) : (Handle<Value>)Undefined(isolate);
+	args[1] = arg4 ? (arg4->value) : (Handle<Value>)Undefined(isolate);
+	args[2] = arg5 ? (arg5->value) : (Handle<Value>)Undefined(isolate);
 	Local<Value> result = func->Call(obj, 3, args);
 
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
