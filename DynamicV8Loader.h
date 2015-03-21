@@ -73,7 +73,7 @@ and glue up the implementation in the hxcpp runtime.
 For the static link case, these functions are linked directly.
 */
 
-void hx_error()
+void v8_hx_error()
 {
 	Isolate *isolate = Isolate::GetCurrent();
 	isolate->ThrowException(String::NewFromOneByte(isolate, (uint8_t*)"Error"));
@@ -183,7 +183,7 @@ void * v8_val_data(TmpHandle * arg1)
 }
 
 
-int val_fun_nargs(TmpHandle * arg1)
+int v8_val_fun_nargs(TmpHandle * arg1)
 {
 	if (arg1 == 0)
 		return faNotFunction;
@@ -431,7 +431,7 @@ TmpHandle *v8_val_to_buffer(TmpHandle * arg1)
 
 
 
-buffer alloc_buffer(const char *inStr)
+buffer v8_alloc_buffer(const char *inStr)
 {
 	// TODO:
 	return 0;
@@ -452,14 +452,14 @@ value v8_buffer_val(buffer b)
 }
 
 
-value buffer_to_string(buffer inBuffer)
+value v8_buffer_to_string(buffer inBuffer)
 {
 	// TODO:
 	return 0;
 }
 
 
-void buffer_append(buffer inBuffer, const char *inStr)
+void v8_buffer_append(buffer inBuffer, const char *inStr)
 {
 	// TODO:
 	return;
@@ -481,19 +481,19 @@ int v8_buffer_size(TmpHandle *inBuffer)
 }
 
 
-void buffer_set_size(buffer inBuffer, int inLen)
+void v8_buffer_set_size(buffer inBuffer, int inLen)
 {
 	// TODO:
 }
 
 
-void buffer_append_sub(buffer inBuffer, const char *inStr, int inLen)
+void v8_buffer_append_sub(buffer inBuffer, const char *inStr, int inLen)
 {
 	// TODO:
 }
 
 
-void buffer_append_char(buffer inBuffer, int inChar)
+void v8_buffer_append_char(buffer inBuffer, int inChar)
 {
 	// TODO:
 }
@@ -519,7 +519,7 @@ char * v8_buffer_data(TmpHandle *inBuffer)
 
 
 // Append value to buffer
-void val_buffer(buffer inBuffer, value inValue)
+void v8_val_buffer(buffer inBuffer, value inValue)
 {
 	// TODO:
 }
@@ -636,7 +636,7 @@ if (func.IsEmpty()) \
 
 
 // Call object field
-TmpHandle * val_ocall0(TmpHandle * arg1, int arg2)
+TmpHandle * v8_val_ocall0(TmpHandle * arg1, int arg2)
 {
 	HANDLE_MEM_FUNC
 	Local<Value> result = func->Call(obj, 0, 0);
@@ -645,7 +645,7 @@ TmpHandle * val_ocall0(TmpHandle * arg1, int arg2)
 }
 
 
-TmpHandle * val_ocall1(TmpHandle * arg1, int arg2, TmpHandle * arg3)
+TmpHandle * v8_val_ocall1(TmpHandle * arg1, int arg2, TmpHandle * arg3)
 {
 	HANDLE_MEM_FUNC
 
@@ -657,7 +657,7 @@ TmpHandle * val_ocall1(TmpHandle * arg1, int arg2, TmpHandle * arg3)
 }
 
 
-TmpHandle * val_ocall2(TmpHandle * arg1, int arg2, TmpHandle * arg3, TmpHandle * arg4)
+TmpHandle * v8_val_ocall2(TmpHandle * arg1, int arg2, TmpHandle * arg3, TmpHandle * arg4)
 {
 	HANDLE_MEM_FUNC
 
@@ -670,7 +670,7 @@ TmpHandle * val_ocall2(TmpHandle * arg1, int arg2, TmpHandle * arg3, TmpHandle *
 }
 
 
-TmpHandle * val_ocall3(TmpHandle * arg1, int arg2, TmpHandle * arg3, TmpHandle * arg4, TmpHandle * arg5)
+TmpHandle * v8_val_ocall3(TmpHandle * arg1, int arg2, TmpHandle * arg3, TmpHandle * arg4, TmpHandle * arg5)
 {
 	HANDLE_MEM_FUNC
 
@@ -685,7 +685,7 @@ TmpHandle * val_ocall3(TmpHandle * arg1, int arg2, TmpHandle * arg3, TmpHandle *
 }
 
 
-TmpHandle * val_ocallN(TmpHandle * arg1, int arg2, TmpHandle * arg3)
+TmpHandle * v8_val_ocallN(TmpHandle * arg1, int arg2, TmpHandle * arg3)
 {
 	// TODO:
 	return 0;
@@ -788,13 +788,13 @@ void v8_val_gc(TmpHandle * arg1, hxFinalizer arg2)
 	hxFinalizer((value)arg1);
 }
 
-void  val_gc_ptr(void * arg1, hxPtrFinalizer arg2)
+void v8_val_gc_ptr(void * arg1, hxPtrFinalizer arg2)
 {
 	// TODO:
 	InternalError("val_gc_ptr Not implemented");
 }
 
-void  val_gc_add_root(TmpHandle **inRoot)
+void v8_val_gc_add_root(TmpHandle **inRoot)
 {
 	// TODO:
 	//hx::GCAddRoot(inRoot);
@@ -802,7 +802,7 @@ void  val_gc_add_root(TmpHandle **inRoot)
 }
 
 
-void  val_gc_remove_root(TmpHandle **inRoot)
+void v8_val_gc_remove_root(TmpHandle **inRoot)
 {
 	// TODO:
 	//hx::GCRemoveRoot(inRoot);

@@ -11,6 +11,12 @@
 #include "DynamicV8Loader.h"
 #include "V8VMScope.h"
 
+#ifdef _WIN32
+#define NODE_NDLL_EXPORT __declspec(dllexport)
+#else
+#define NODE_NDLL_EXPORT
+#endif
+
 using namespace v8;
 
 typedef void (hx_set_loader_t)(ResolveProc);
@@ -67,7 +73,7 @@ void Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	}
 	if (result)
 	{
-		printf("Could not load %s.\n", lib);
+		printf("Could not load %s.\n", lib.c_str());
 		return;
 	}
 
@@ -171,7 +177,7 @@ void Cleanup(void *arg)
 }
 
 extern "C" {
-__declspec(dllexport) void Init(Handle<Object> exports) {
+NODE_NDLL_EXPORT void Init(Handle<Object> exports) {
 	Isolate* isolate = Isolate::GetCurrent();
 	exports->Set(String::NewFromUtf8(isolate, "load_lib"),
 		FunctionTemplate::New(isolate, Load)->GetFunction());
