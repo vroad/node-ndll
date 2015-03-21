@@ -10,7 +10,6 @@
 #include <map>
 #include <string>
 
-#include "Util.h"
 #include "V8VMScope.h"
 
 namespace {
