@@ -1,7 +1,7 @@
 #include <node.h>
 #include <v8.h>
 #define IMPLEMENT_API
-#include <hx/CFFI.h>
+#include "hx/CFFI.h"
 
 #include <windows.h>
 #include <string>

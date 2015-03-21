@@ -5,7 +5,7 @@
 
 #define IGNORE_CFFI_API_H
 
-#include <hx/CFFI.h>
+#include "hx/CFFI.h"
 #include <vector>
 #include <map>
 #include <string>
