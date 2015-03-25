@@ -704,7 +704,6 @@ int v8_val_id(const char * arg1)
 	sgIDToName.push_back(key);
 	Isolate *isolate = Isolate::GetCurrent();
 	Persistent<String> p(isolate, String::NewFromUtf8(isolate, arg1));
-	p.MarkIndependent();
 	sgIDToHandle.push_back(p);
 	sgNameToID[key] = idx;
 	//printf("sgIDToHandle[%d] = %s\n", idx, arg1);
