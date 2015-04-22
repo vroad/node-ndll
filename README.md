@@ -3,7 +3,7 @@ node-ndll is a small native addon which allows you to use NDLLs from Node.js app
 I created this module to build Lime/OpenFL applications that runs on Node's V8 JavaScript engine.
 
 ### Installation
-As this is a native module, you'll need node-gyp to build it. After that you can simply install with npm.
+As this is a native module, you'll need node-gyp (or pangyp on io.js) to build it. After that you can simply install with npm.
 
 To install node-ndll globally, use:
 
