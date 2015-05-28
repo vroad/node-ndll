@@ -43,6 +43,7 @@ public:
 	std::vector<TmpHandle*> handles;
 	std::vector<std::string> stringValues;
 	std::vector<std::wstring> wstringValues;
+	std::vector<std::vector<int>> intArrayValues;
 };
 
 V8HandleContainerList *GetV8HandleContainerList(Isolate *isolate)
@@ -112,6 +113,24 @@ const char *ToChar(Isolate *isolate, Handle<Value> value)
 	V8HandleContainer *container = GetV8HandleContainer(isolate);
 	container->stringValues.push_back(*String::Utf8Value(value));
 	return container->stringValues[container->stringValues.size() - 1].c_str();
+}
+
+int *ToIntArray(Isolate *isolate, Handle<Value> value)
+{
+	if (value->IsArray())
+	{
+		V8HandleContainer *container = GetV8HandleContainer(isolate);
+		
+		std::vector<int> intArray;
+		Handle<Array> array = value.As<Array>();
+		for (int i = 0; i < array->Length(); i++)
+			intArray.push_back(array->Get(i)->Int32Value());
+		
+		container->intArrayValues.push_back(intArray);
+		return intArray.data();
+	}
+	else
+		return 0;
 }
 
 } // end anon namespace

@@ -391,9 +391,9 @@ bool * v8_val_array_bool(v8::Value * arg1)
 }
 
 
-int * v8_val_array_int(v8::Value * arg1)
+int * v8_val_array_int(TmpHandle * arg1)
 {
-	return 0;
+	return ToIntArray(Isolate::GetCurrent(), arg1->value);
 }
 
 
