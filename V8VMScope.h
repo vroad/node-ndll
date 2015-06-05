@@ -17,7 +17,17 @@ class V8HandleContainer;
 typedef std::unique_ptr<V8HandleContainer> V8HandleContainerPtr;
 typedef std::map<std::string, int> NameToID;
 
-class TmpHandle;
+class TmpHandle
+{
+public:
+
+	TmpHandle(Handle<Value> value)
+		: value(value)
+	{
+	}
+
+	Handle<Value> value;
+};
 
 class V8WeakHandleData
 {
@@ -36,6 +46,25 @@ public:
 class V8HandleContainerList
 {
 public:
+
+	V8HandleContainerList(Isolate *isolate)
+		: isolate(isolate)
+	{
+	}
+
+	~V8HandleContainerList()
+	{
+		HandleScope scope(isolate);
+		for (std::list< V8WeakHandleData* >::const_iterator it = weakHandles.begin(); it != weakHandles.end(); ++it)
+		{
+			V8WeakHandleData *data = (*it);
+			TmpHandle handle(Local<Value>::New(isolate, data->value));
+			data->finalizer((value)&handle);
+			delete data;
+		}
+	}
+
+	Isolate *isolate;
 	std::vector<V8HandleContainerPtr> containers;
 	
 	NameToID sgNameToID;
@@ -45,18 +74,6 @@ public:
 };
 
 std::map<Isolate*, V8HandleContainerList*> valuesMap;
-
-class TmpHandle
-{
-public:
-
-	TmpHandle(Handle<Value> value)
-		: value(value)
-	{
-	}
-
-	Handle<Value> value;
-};
 
 class V8HandleContainer
 {
@@ -79,7 +96,7 @@ V8HandleContainerList *GetV8HandleContainerList(Isolate *isolate)
 	V8HandleContainerList *list = valuesMap[isolate];
 	if (!list)
 	{
-		list = new V8HandleContainerList();
+		list = new V8HandleContainerList(isolate);
 		valuesMap[isolate] = list;
 	}
 	return list;
