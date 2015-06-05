@@ -151,7 +151,7 @@ int *ToIntArray(Isolate *isolate, Handle<Value> value)
 		
 		std::vector<int> intArray;
 		Handle<Array> array = value.As<Array>();
-		for (int i = 0; i < array->Length(); i++)
+		for (uint32_t i = 0; i < array->Length(); i++)
 			intArray.push_back(array->Get(i)->Int32Value());
 		
 		container->intArrayValues.push_back(intArray);
