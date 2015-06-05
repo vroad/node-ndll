@@ -51,16 +51,6 @@ void hxcpp_kind_share(int &ioKind, const char *inName)
 	ioKind = kind;
 }
 
-typedef std::map<std::string, int> NameToID;
-NameToID sgNameToID;
-std::vector< std::string > sgIDToName;
-std::vector< Persistent<String, CopyablePersistentTraits<String>> > sgIDToHandle;
-
-void ClearSgIdToHandle()
-{
-	for (size_t i = 0; i < sgIDToHandle.size(); ++i)
-		sgIDToHandle[i].Reset();
-}
 
 extern "C" {
 
@@ -627,7 +617,8 @@ EscapableHandleScope handle_scope(isolate); \
 Local<Object> obj = arg1->value.As<Object>(); \
 if (obj.IsEmpty()) \
 	return InternalError("Calling non-object member"); \
-Local<Value> member = obj->Get( Local<String>::New(isolate, sgIDToHandle[arg2]) ); \
+V8HandleContainerList *list = GetV8HandleContainerList(isolate); \
+Local<Value> member = obj->Get( Local<String>::New(isolate, list->sgIDToHandle[arg2]) ); \
 if (member.IsEmpty()) \
 	return InternalError("Missing member in call"); \
 Local<Function> func = member.As<Function>(); \
@@ -697,15 +688,16 @@ TmpHandle * v8_val_ocallN(TmpHandle * arg1, int arg2, TmpHandle * arg3)
 int v8_val_id(const char * arg1)
 {
 	std::string key(arg1);
-	NameToID::iterator i = sgNameToID.find(key);
-	if (i != sgNameToID.end())
-		return i->second;
-	int idx = sgIDToName.size();
-	sgIDToName.push_back(key);
 	Isolate *isolate = Isolate::GetCurrent();
+	V8HandleContainerList *list = GetV8HandleContainerList(isolate);
+	NameToID::iterator i = list->sgNameToID.find(key);
+	if (i != list->sgNameToID.end())
+		return i->second;
+	int idx = list->sgIDToName.size();
+	list->sgIDToName.push_back(key);
 	Persistent<String> p(isolate, String::NewFromUtf8(isolate, arg1));
-	sgIDToHandle.push_back(p);
-	sgNameToID[key] = idx;
+	list->sgIDToHandle.push_back(p);
+	list->sgNameToID[key] = idx;
 	//printf("sgIDToHandle[%d] = %s\n", idx, arg1);
 	return idx;
 }
@@ -726,7 +718,8 @@ void v8_alloc_field(TmpHandle * arg1, int arg2, TmpHandle * arg3)
 		InternalError("Setting non-object member");
 		return;
 	}
-	obj->Set(Local<String>::New(isolate, sgIDToHandle[arg2]), arg3->value);
+	V8HandleContainerList *list = GetV8HandleContainerList(isolate);
+	obj->Set(Local<String>::New(isolate, list->sgIDToHandle[arg2]), arg3->value);
 }
 
 TmpHandle * v8_val_field(TmpHandle * arg1, int arg2)
@@ -738,8 +731,9 @@ TmpHandle * v8_val_field(TmpHandle * arg1, int arg2)
 	Handle<Object> obj = arg1->value.As<Object>();
 	if (obj.IsEmpty())
 		return InternalError("Getting non-object member");
-
-	return NewHandlePointer(isolate, handle_scope.Escape(obj->Get(Local<String>::New(isolate, sgIDToHandle[arg2]))));
+	
+	V8HandleContainerList *list = GetV8HandleContainerList(isolate);
+	return NewHandlePointer(isolate, handle_scope.Escape(obj->Get(Local<String>::New(isolate, list->sgIDToHandle[arg2]))));
 }
 
 double v8_val_field_numeric(TmpHandle * arg1, int arg2)

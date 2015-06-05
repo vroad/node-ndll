@@ -173,7 +173,6 @@ void Cleanup(void *arg)
 	for (size_t i = 0; i < funcDataList.size(); ++i)
 		delete funcDataList[i];
 	funcDataList.clear();
-	ClearSgIdToHandle();
 }
 
 extern "C" {

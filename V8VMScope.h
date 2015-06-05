@@ -14,7 +14,17 @@ using namespace v8;
 
 class V8HandleContainer;
 typedef std::unique_ptr<V8HandleContainer> V8HandleContainerPtr;
-typedef std::vector<V8HandleContainerPtr> V8HandleContainerList;
+typedef std::map<std::string, int> NameToID;
+
+class V8HandleContainerList
+{
+public:
+	std::vector<V8HandleContainerPtr> containers;
+	
+	NameToID sgNameToID;
+	std::vector< std::string > sgIDToName;
+	std::vector< Persistent<String, CopyablePersistentTraits<String>> > sgIDToHandle;
+};
 
 std::map<Isolate*, std::unique_ptr<V8HandleContainerList>> valuesMap;
 
@@ -64,13 +74,13 @@ public:
 		: isolate(isolate)
 	{
 		V8HandleContainerList *list = GetV8HandleContainerList(isolate);
-		list->push_back(std::unique_ptr<V8HandleContainer>(new V8HandleContainer()));
+		list->containers.push_back(std::unique_ptr<V8HandleContainer>(new V8HandleContainer()));
 	}
 
 	~V8VMScope()
 	{
 		V8HandleContainerList *list = GetV8HandleContainerList(isolate);
-		list->pop_back();
+		list->containers.pop_back();
 		/*size_t handleCount = 0;
 		for (size_t i = 0; i < list->size(); ++i)
 			handleCount += (*list)[i].get()->handles.size();
@@ -85,12 +95,12 @@ private:
 V8HandleContainer *GetV8HandleContainer(Isolate *isolate)
 {
 	V8HandleContainerList *list = GetV8HandleContainerList(isolate);
-	if (list->empty())
+	if (list->containers.empty())
 	{
 		printf("Error: GetV8HandleContainer should be called inside scope.\n");
 		return 0;
 	}
-	return (*list)[list->size() - 1].get();
+	return list->containers[list->containers.size() - 1].get();
 }
 
 TmpHandle *NewHandlePointer(Isolate *isolate, Handle<Value> value)
