@@ -44,7 +44,7 @@ public:
 	std::list< V8WeakHandleData* > weakHandles;
 };
 
-std::map<Isolate*, std::unique_ptr<V8HandleContainerList>> valuesMap;
+std::map<Isolate*, V8HandleContainerList*> valuesMap;
 
 class TmpHandle
 {
@@ -76,11 +76,11 @@ public:
 
 V8HandleContainerList *GetV8HandleContainerList(Isolate *isolate)
 {
-	V8HandleContainerList *list = valuesMap[isolate].get();
+	V8HandleContainerList *list = valuesMap[isolate];
 	if (!list)
 	{
 		list = new V8HandleContainerList();
-		valuesMap[isolate] = std::unique_ptr<V8HandleContainerList>(list);
+		valuesMap[isolate] = list;
 	}
 	return list;
 }

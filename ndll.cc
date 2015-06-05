@@ -170,6 +170,9 @@ void CallNDLLFunc(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 void Cleanup(void *arg)
 {
+	for (std::map<Isolate*, V8HandleContainerList*>::iterator it = valuesMap.begin(); it != valuesMap.end(); ++it)
+		delete (*it).second;
+	valuesMap.clear();
 	for (size_t i = 0; i < funcDataList.size(); ++i)
 		delete funcDataList[i];
 	funcDataList.clear();
