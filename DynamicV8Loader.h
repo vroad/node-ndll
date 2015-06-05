@@ -52,6 +52,18 @@ void hxcpp_kind_share(int &ioKind, const char *inName)
 }
 
 
+void WeakCallback(const WeakCallbackData<Value, V8WeakHandleData>& data)
+{
+	V8WeakHandleData *weakData = data.GetParameter();
+	TmpHandle handle(data.GetValue());
+	weakData->finalizer((value)&handle);
+	
+	V8HandleContainerList *list = GetV8HandleContainerList(data.GetIsolate());
+	list->weakHandles.erase(weakData->it);
+	delete weakData;
+}
+
+
 extern "C" {
 
 
@@ -778,7 +790,15 @@ void v8_val_gc(TmpHandle * arg1, hxFinalizer arg2)
 {
 	if (!arg1)
 		return;
-	hxFinalizer((value)arg1);
+	Isolate *isolate = Isolate::GetCurrent();
+	
+	V8HandleContainerList *list = GetV8HandleContainerList(isolate);
+	V8WeakHandleData *data = new V8WeakHandleData(isolate, arg1->value, arg2);
+	list->weakHandles.push_back(data);
+	data->it = list->weakHandles.end();
+	--data->it;
+	
+	data->value.SetWeak<V8WeakHandleData>(data, WeakCallback);
 }
 
 void v8_val_gc_ptr(void * arg1, hxPtrFinalizer arg2)

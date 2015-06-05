@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <map>
+#include <list>
 #include <v8.h>
 #include <assert.h>
 #include <memory>
@@ -16,6 +17,22 @@ class V8HandleContainer;
 typedef std::unique_ptr<V8HandleContainer> V8HandleContainerPtr;
 typedef std::map<std::string, int> NameToID;
 
+class TmpHandle;
+
+class V8WeakHandleData
+{
+public:
+
+	V8WeakHandleData(Isolate *isolate, Handle<Value> value, hxFinalizer finalizer)
+		: value(isolate, value), finalizer(finalizer)
+	{
+	}
+
+	Persistent<Value> value;
+	hxFinalizer finalizer;
+	std::list<V8WeakHandleData*>::iterator it;
+};
+
 class V8HandleContainerList
 {
 public:
@@ -24,6 +41,7 @@ public:
 	NameToID sgNameToID;
 	std::vector< std::string > sgIDToName;
 	std::vector< Persistent<String, CopyablePersistentTraits<String>> > sgIDToHandle;
+	std::list< V8WeakHandleData* > weakHandles;
 };
 
 std::map<Isolate*, std::unique_ptr<V8HandleContainerList>> valuesMap;
