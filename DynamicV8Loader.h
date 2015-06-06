@@ -1,6 +1,8 @@
-#include <v8.h>
+#ifndef _DYNAMICV8LOADER_H_
+#define _DYNAMICV8LOADER_H_
+
+#include <node.h>
 #include <stdio.h>
-#include <node_buffer.h>
 // Get headers etc.
 
 #define IGNORE_CFFI_API_H
@@ -10,9 +12,7 @@
 #include <map>
 #include <string>
 
-#include "V8VMScope.h"
-
-namespace {
+#include "HandleUtils.h"
 
 using namespace v8;
 
@@ -57,15 +57,12 @@ void WeakCallback(const WeakCallbackData<Value, V8WeakHandleData>& data)
 	V8WeakHandleData *weakData = data.GetParameter();
 	TmpHandle handle(data.GetValue());
 	weakData->finalizer((value)&handle);
+	weakData->value.Reset();
 	
 	V8HandleContainerList *list = GetV8HandleContainerList(data.GetIsolate());
 	list->weakHandles.erase(weakData->it);
 	delete weakData;
 }
-
-
-extern "C" {
-
 
 /*
 This bit of Macro magic is used to define extern function pointers
@@ -956,7 +953,4 @@ void *DynamicV8Loader(const char *inName)
 	return 0;
 }
 
-
-} // end extern "C"
-
-} // end anon namspace
+#endif

@@ -1,5 +1,4 @@
 #include <node.h>
-#include <v8.h>
 #include <uv.h>
 
 #define IMPLEMENT_API
@@ -170,8 +169,7 @@ void CallNDLLFunc(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 void Cleanup(void *arg)
 {
-	for (std::map<Isolate*, V8HandleContainerList*>::iterator it = valuesMap.begin(); it != valuesMap.end(); ++it)
-		delete (*it).second;
+	DisposeValuesMap();
 	for (size_t i = 0; i < funcDataList.size(); ++i)
 		delete funcDataList[i];
 }
