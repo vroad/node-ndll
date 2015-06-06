@@ -18,9 +18,6 @@ using namespace v8;
 
 vkind k_int32 = (vkind)valtAbstractBase;
 vkind k_hash = (vkind)(valtAbstractBase + 1);
-static int sgKinds = (int)(valtAbstractBase + 2);
-typedef std::map<std::string, int> KindMap;
-static KindMap sgKindMap;
 
 TmpHandle *InternalError(const char *inMessage)
 {
@@ -28,8 +25,6 @@ TmpHandle *InternalError(const char *inMessage)
 	Isolate *isolate = Isolate::GetCurrent();
 	return NewHandlePointer(isolate, String::NewFromUtf8(isolate, inMessage));
 }
-
-
 
 struct AbstractData
 {
@@ -39,13 +34,15 @@ struct AbstractData
 
 int hxcpp_alloc_kind()
 {
-	return ++sgKinds;
+	V8HandleContainerList *list = GetV8HandleContainerList(Isolate::GetCurrent());
+	return ++list->sgKinds;
 }
 
 
 void hxcpp_kind_share(int &ioKind, const char *inName)
 {
-	int &kind = sgKindMap[inName];
+	V8HandleContainerList *list = GetV8HandleContainerList(Isolate::GetCurrent());
+	int &kind = list->sgKindMap[inName];
 	if (kind == 0)
 		kind = hxcpp_alloc_kind();
 	ioKind = kind;

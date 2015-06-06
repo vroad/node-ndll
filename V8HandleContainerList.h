@@ -13,6 +13,7 @@ using namespace v8;
 
 typedef std::unique_ptr<V8HandleContainer> V8HandleContainerPtr;
 typedef std::map<std::string, int> NameToID;
+typedef std::map<std::string, int> KindMap;
 
 class V8HandleContainerList
 {
@@ -31,6 +32,8 @@ public:
 	std::vector< std::string > sgIDToName;
 	std::vector< Persistent<String, CopyablePersistentTraits<String>> > sgIDToHandle;
 	std::list< V8WeakHandleData* > weakHandles;
+	KindMap sgKindMap;
+	int sgKinds;
 };
 
 #endif
