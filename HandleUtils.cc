@@ -1,15 +1,23 @@
 #include "HandleUtils.h"
+#include <array>
+#include <mutex>
 
-static std::map<Isolate*, V8HandleContainerList*> valuesMap;
+static std::array<V8HandleContainerList*, 16> values;
+static std::mutex mtx;
+static unsigned int nextThreadIndex = 0;
 
 V8HandleContainerList *GetV8HandleContainerList(Isolate *isolate)
 {
-	V8HandleContainerList *list = valuesMap[isolate];
-	if (!list)
+	V8HandleContainerList *list;
+	for (size_t i = 0; i < values.size(); ++i)
 	{
-		list = new V8HandleContainerList(isolate);
-		valuesMap[isolate] = list;
+		list = values[i];
+		if (list != NULL && list->isolate == isolate)
+			return list;
 	}
+	std::lock_guard<std::mutex> lock(mtx);
+	list = new V8HandleContainerList(isolate);
+	values[nextThreadIndex++] = list;
 	return list;
 }
 
@@ -63,12 +71,34 @@ int *ToIntArray(Isolate *isolate, Handle<Value> value)
 		return 0;
 }
 
-void DisposeValuesMap()
+void DisposeHandlesOfMainThread()
 {
-	for (std::map<Isolate*, V8HandleContainerList*>::iterator it = valuesMap.begin(); it != valuesMap.end(); ++it)
+	std::lock_guard<std::mutex> lock(mtx);
+	Isolate *currentIsolate = Isolate::GetCurrent();
+	for (size_t i = 0; i < values.size(); ++i)
 	{
-		V8HandleContainerList *list = (*it).second;
+		V8HandleContainerList *list = values[i];
+		if (list != NULL && list->isolate == currentIsolate)
+		{
+			list->Dispose();
+			delete list;
+			values[i] = NULL;
+			break;
+		}
+	}
+}
+
+void DisposeHandlesOfWorkerThreads()
+{
+	std::lock_guard<std::mutex> lock(mtx);
+	Isolate *currentIsolate = Isolate::GetCurrent();
+	for (size_t i = 0; i < values.size(); ++i)
+	{
+		V8HandleContainerList *list = values[i];
+		if (list == NULL || list->isolate == currentIsolate)
+			continue;
 		list->Dispose();
 		delete list;
+		values[i] = NULL;
 	}
 }

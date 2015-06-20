@@ -105,6 +105,13 @@ void Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	funcDataList.push_back(funcData);
 }
 
+// Dispose handles of other threads.
+void DisposeHandlesOfWorkerThreads_V8(const v8::FunctionCallbackInfo<v8::Value>& args) {
+
+	DisposeHandlesOfWorkerThreads();
+
+}
+
 // Calls a NDLL function.
 void CallNDLLFunc(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	Isolate *isolate = args.GetIsolate();
@@ -169,7 +176,7 @@ void CallNDLLFunc(const v8::FunctionCallbackInfo<v8::Value>& args) {
 
 void Cleanup(void *arg)
 {
-	DisposeValuesMap();
+	DisposeHandlesOfMainThread();
 	for (size_t i = 0; i < funcDataList.size(); ++i)
 		delete funcDataList[i];
 }
@@ -179,6 +186,8 @@ NODE_NDLL_EXPORT void Init(Handle<Object> exports) {
 	Isolate* isolate = Isolate::GetCurrent();
 	exports->Set(String::NewFromUtf8(isolate, "load_lib"),
 		FunctionTemplate::New(isolate, Load)->GetFunction());
+	exports->Set(String::NewFromUtf8(isolate, "disposeHandlesOfWorkerThreads"),
+		FunctionTemplate::New(isolate, DisposeHandlesOfWorkerThreads_V8)->GetFunction());
 	if (!initialized)
 		node::AtExit(Cleanup);
 	initialized = true;

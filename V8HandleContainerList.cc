@@ -12,8 +12,9 @@ V8HandleContainerList::~V8HandleContainerList()
 
 void V8HandleContainerList::Dispose()
 {
-	HandleScope scope(isolate);
+	Locker locker(isolate);
 	Isolate::Scope isolateScope(isolate);
+	HandleScope scope(isolate);
 	V8VMScope v8vmScope(isolate);
 	for (std::list< V8WeakHandleData* >::const_iterator it = weakHandles.begin(); it != weakHandles.end(); ++it)
 	{
@@ -22,4 +23,5 @@ void V8HandleContainerList::Dispose()
 		data->finalizer((value)&handle);
 		delete data;
 	}
+	sgIDToHandle.clear();
 }

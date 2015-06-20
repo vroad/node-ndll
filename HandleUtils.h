@@ -16,6 +16,7 @@ const wchar_t *ToWChar(Isolate *isolate, Handle<Value> value);
 const char *ToChar(Isolate *isolate, Handle<Value> value);
 int *ToIntArray(Isolate *isolate, Handle<Value> value);
 
-void DisposeValuesMap();
+void DisposeHandlesOfMainThread();
+void DisposeHandlesOfWorkerThreads();
 
 #endif
