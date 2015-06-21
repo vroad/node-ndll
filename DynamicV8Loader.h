@@ -26,6 +26,16 @@ TmpHandle *InternalError(const char *inMessage)
 	return NewHandlePointer(isolate, String::NewFromUtf8(isolate, inMessage));
 }
 
+bool IsEmptyHandle(TmpHandle *handle)
+{
+	if (!handle)
+		return true;
+	else if (handle->value.IsEmpty())
+		return true;
+	else
+		return false;
+}
+
 struct AbstractData
 {
 	vkind mKind;
@@ -94,7 +104,7 @@ void v8_hx_fail(char * arg1, char * arg2, int arg3)
 
 int v8_val_type(TmpHandle * _arg1)
 {
-	if (_arg1 == 0)
+	if (IsEmptyHandle(_arg1))
 		return valtNull;
 	HandleScope handle_scope(Isolate::GetCurrent());
 	Handle<Value> arg1 = _arg1->value;
@@ -130,7 +140,7 @@ int v8_val_type(TmpHandle * _arg1)
 vkind v8_val_kind(TmpHandle * arg1)
 {
 	HandleScope handle_scope(Isolate::GetCurrent());
-	if (arg1 == 0)
+	if (IsEmptyHandle(arg1))
 	{
 		InternalError("Null value has not 'kind'");
 		return 0;
@@ -150,7 +160,9 @@ vkind v8_val_kind(TmpHandle * arg1)
 
 void * v8_val_to_kind(TmpHandle * arg1, vkind arg2)
 {
-	if (arg1 == 0 || (arg1 && arg1->value->IsExternal()))
+	if (IsEmptyHandle(arg1))
+		return 0;
+	if (arg1->value->IsExternal())
 		return 0;
 
 	v8::HandleScope handle_scope(Isolate::GetCurrent());
@@ -166,7 +178,7 @@ void * v8_val_to_kind(TmpHandle * arg1, vkind arg2)
 // don't check the 'kind' ...
 void * v8_val_data(TmpHandle * arg1)
 {
-	if (arg1 == 0)
+	if (IsEmptyHandle(arg1))
 		return 0;
 
 	v8::HandleScope handle_scope(Isolate::GetCurrent());
@@ -181,7 +193,7 @@ void * v8_val_data(TmpHandle * arg1)
 
 int v8_val_fun_nargs(TmpHandle * arg1)
 {
-	if (arg1 == 0)
+	if (IsEmptyHandle(arg1))
 		return faNotFunction;
 	v8::HandleScope handle_scope(Isolate::GetCurrent());
 	Handle<Function> func = arg1->value.As<Function>();
@@ -198,28 +210,32 @@ int v8_val_fun_nargs(TmpHandle * arg1)
 // Extract TmpHandle * type
 bool v8_val_bool(TmpHandle * arg1)
 {
-	if (arg1 == 0) return false;
+	if (IsEmptyHandle(arg1))
+		return false;
 	return (*arg1->value)->BooleanValue();
 }
 
 
 int v8_val_int(TmpHandle * arg1)
 {
-	if (arg1 == 0) return 0;
+	if (IsEmptyHandle(arg1))
+		return 0;
 	return (*arg1->value)->Int32Value();
 }
 
 
 double v8_val_float(TmpHandle * arg1)
 {
-	if (arg1 == 0) return 0.0;
+	if (IsEmptyHandle(arg1))
+		return 0.0;
 	return (*arg1->value)->NumberValue();
 }
 
 
 double v8_val_number(TmpHandle * arg1)
 {
-	if (arg1 == 0) return 0.0;
+	if (IsEmptyHandle(arg1))
+		return 0.0;
 	return (*arg1->value)->NumberValue();
 }
 
@@ -273,7 +289,10 @@ TmpHandle * v8_alloc_int32(int arg1) { return v8_alloc_int(arg1); }
 // String access
 int v8_val_strlen(TmpHandle * arg1)
 {
-	if (arg1 == 0 || (arg1 && !(*arg1->value)->IsString())) return 0;
+	if (IsEmptyHandle(arg1))
+		return 0;
+	if (!(*arg1->value)->IsString())
+		return 0;
 	HandleScope handle_scope(Isolate::GetCurrent());
 	Handle<String> str = arg1->value.As<String>();
 	return str->Utf8Length();
@@ -282,16 +301,16 @@ int v8_val_strlen(TmpHandle * arg1)
 
 const wchar_t * v8_val_wstring(TmpHandle * arg1)
 {
-	if (arg1 == 0) return L"";
-
+	if (IsEmptyHandle(arg1))
+		return L"";
 	return ToWChar(Isolate::GetCurrent(), arg1->value);
 }
 
 
 const char * v8_val_string(TmpHandle * arg1)
 {
-	if (arg1 == 0) return "";
-
+	if (IsEmptyHandle(arg1))
+		return "";
 	return ToChar(Isolate::GetCurrent(), arg1->value);
 }
 
@@ -327,7 +346,10 @@ TmpHandle *v8_alloc_wstring_len(const wchar_t *inStr, int inLen)
 // Array access - generic
 int v8_val_array_size(TmpHandle * arg1)
 {
-	if (!arg1 || (arg1 && !(*arg1->value)->IsArray())) return 0;
+	if (IsEmptyHandle(arg1))
+		return 0;
+	if (!(*arg1->value)->IsArray())
+		return 0;
 	HandleScope handle_scope(Isolate::GetCurrent());
 	Handle<Array> array = arg1->value.As<Array>();
 	return array->Length();
@@ -336,35 +358,44 @@ int v8_val_array_size(TmpHandle * arg1)
 
 TmpHandle * v8_val_array_i(TmpHandle * arg1, int arg2)
 {
-	if (!arg1) return 0;
+	if (IsEmptyHandle(arg1))
+		return 0;
 	Isolate *isolate = Isolate::GetCurrent();
 	EscapableHandleScope handle_scope(isolate);
 	Handle<Object> obj = arg1->value.As<Object>();
-	if (obj.IsEmpty()) return 0;
+	if (obj.IsEmpty())
+		return 0;
 	return NewHandlePointer(isolate, handle_scope.Escape(obj->Get(arg2)));
 }
 
 void v8_val_array_set_i(TmpHandle * arg1, int arg2, TmpHandle *inVal)
 {
-	if (!arg1) return;
+	if (IsEmptyHandle(arg1))
+		return;
 	HandleScope handle_scope(Isolate::GetCurrent());
 	Handle<Object> obj = arg1->value.As<Object>();
-	if (obj.IsEmpty()) return;
+	if (obj.IsEmpty())
+		return;
 	obj->Set(arg2, inVal->value);
 }
 
 void v8_val_array_set_size(TmpHandle * arg1, int inLen)
 {
-	if (!arg1 || inLen == 0) return;
+	if (IsEmptyHandle(arg1) || inLen == 0)
+		return;
 	HandleScope handle_scope(Isolate::GetCurrent());
 	Handle<Object> obj = arg1->value.As<Object>();
-	if (obj.IsEmpty()) return;
+	if (obj.IsEmpty())
+		return;
 	obj->Get(inLen - 1);
 }
 
 void v8_val_array_push(TmpHandle * arg1, TmpHandle *inValue)
 {
-	if (!arg1 || (arg1 && !(*arg1->value)->IsArray())) return;
+	if (IsEmptyHandle(arg1))
+		return;
+	if (!(*arg1->value)->IsArray())
+		return;
 	HandleScope handle_scope(Isolate::GetCurrent());
 	Handle<Array> array = arg1->value.As<Array>();
 	array->Set(array->Length(), inValue->value);
@@ -410,7 +441,7 @@ value * v8_val_array_value(v8::Value * arg1)
 // The byte array may be a string or a Array<bytes> depending on implementation
 TmpHandle *v8_val_to_buffer(TmpHandle * arg1)
 {
-	if (!arg1)
+	if (IsEmptyHandle(arg1))
 		return 0;
 	if (arg1->value->IsObject())
 	{
@@ -464,7 +495,7 @@ void v8_buffer_append(buffer inBuffer, const char *inStr)
 
 int v8_buffer_size(TmpHandle *inBuffer)
 {
-	if (!inBuffer)
+	if (IsEmptyHandle(inBuffer))
 		return 0;
 	if (inBuffer->value->IsObject())
 	{
@@ -497,7 +528,7 @@ void v8_buffer_append_char(buffer inBuffer, int inChar)
 
 char * v8_buffer_data(TmpHandle *inBuffer)
 {
-	if (!inBuffer)
+	if (IsEmptyHandle(inBuffer))
 		return 0;
 	if (inBuffer->value->IsObject())
 	{
@@ -524,7 +555,7 @@ void v8_val_buffer(buffer inBuffer, value inValue)
 
 
 #define HANDLE_FUNC \
-if (!arg1) \
+if (IsEmptyHandle(arg1)) \
 	return InternalError("Null Function Call"); \
 Isolate *isolate = Isolate::GetCurrent(); \
 EscapableHandleScope handle_scope(isolate); \
@@ -564,7 +595,7 @@ TmpHandle * v8_val_call1(TmpHandle * arg1, TmpHandle * arg2)
 	HANDLE_FUNC
 	
 	Local<Value> args[1];
-	args[0] = arg2 ? arg2->value : (Handle<Value>)Undefined(isolate);
+	args[0] = !IsEmptyHandle(arg2) ? arg2->value : (Handle<Value>)Undefined(isolate);
 	Local<Value> result = func->Call(isolate->GetCurrentContext()->Global(), 1, args);
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
 }
@@ -575,8 +606,8 @@ TmpHandle * v8_val_call2(TmpHandle * arg1, TmpHandle * arg2, TmpHandle * arg3)
 	HANDLE_FUNC
 
 	Local<Value> args[2];
-	args[0] = arg2 ? arg2->value : (Handle<Value>)Undefined(isolate);
-	args[1] = arg3 ? arg3->value : (Handle<Value>)Undefined(isolate);
+	args[0] = !IsEmptyHandle(arg2) ? arg2->value : (Handle<Value>)Undefined(isolate);
+	args[1] = !IsEmptyHandle(arg3) ? arg3->value : (Handle<Value>)Undefined(isolate);
 	Local<Value> result = func->Call(isolate->GetCurrentContext()->Global(), 2, args);
 
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
@@ -588,9 +619,9 @@ TmpHandle * v8_val_call3(TmpHandle * arg1, TmpHandle * arg2, TmpHandle * arg3, T
 	HANDLE_FUNC
 
 	Local<Value> args[3];
-	args[0] = arg2 ? arg2->value : (Handle<Value>)Undefined(isolate);
-	args[1] = arg3 ? arg3->value : (Handle<Value>)Undefined(isolate);
-	args[2] = arg4 ? arg4->value : (Handle<Value>)Undefined(isolate);
+	args[0] = !IsEmptyHandle(arg2) ? arg2->value : (Handle<Value>)Undefined(isolate);
+	args[1] = !IsEmptyHandle(arg3) ? arg3->value : (Handle<Value>)Undefined(isolate);
+	args[2] = !IsEmptyHandle(arg4) ? arg4->value : (Handle<Value>)Undefined(isolate);
 	Local<Value> result = func->Call(isolate->GetCurrentContext()->Global(), 3, args);
 
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
@@ -616,7 +647,7 @@ TmpHandle * v8_val_callN(TmpHandle * arg1, TmpHandle * arg2)
 
 
 #define HANDLE_MEM_FUNC \
-if (!arg1) \
+if (IsEmptyHandle(arg1)) \
 	return InternalError("Null object call"); \
 Isolate *isolate = Isolate::GetCurrent(); \
 EscapableHandleScope handle_scope(isolate); \
@@ -647,7 +678,7 @@ TmpHandle * v8_val_ocall1(TmpHandle * arg1, int arg2, TmpHandle * arg3)
 	HANDLE_MEM_FUNC
 
 	Local<Value> args[1];
-	args[0] = arg3 ? (arg3->value) : (Handle<Value>)Undefined(isolate);
+	args[0] = !IsEmptyHandle(arg3) ? arg3->value : (Handle<Value>)Undefined(isolate);
 	Local<Value> result = func->Call(obj, 1, args);
 
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
@@ -659,8 +690,8 @@ TmpHandle * v8_val_ocall2(TmpHandle * arg1, int arg2, TmpHandle * arg3, TmpHandl
 	HANDLE_MEM_FUNC
 
 	Local<Value> args[2];
-	args[0] = arg3 ? (arg3->value) : (Handle<Value>)Undefined(isolate);
-	args[1] = arg4 ? (arg4->value) : (Handle<Value>)Undefined(isolate);
+	args[0] = !IsEmptyHandle(arg3) ? arg3->value : (Handle<Value>)Undefined(isolate);
+	args[1] = !IsEmptyHandle(arg4) ? arg4->value : (Handle<Value>)Undefined(isolate);
 	Local<Value> result = func->Call(obj, 2, args);
 
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
@@ -672,9 +703,9 @@ TmpHandle * v8_val_ocall3(TmpHandle * arg1, int arg2, TmpHandle * arg3, TmpHandl
 	HANDLE_MEM_FUNC
 
 	Handle<Value> args[3];
-	args[0] = arg3 ? (arg3->value) : (Handle<Value>)Undefined(isolate);
-	args[1] = arg4 ? (arg4->value) : (Handle<Value>)Undefined(isolate);
-	args[2] = arg5 ? (arg5->value) : (Handle<Value>)Undefined(isolate);
+	args[0] = !IsEmptyHandle(arg3) ? arg3->value : (Handle<Value>)Undefined(isolate);
+	args[1] = !IsEmptyHandle(arg4) ? arg4->value : (Handle<Value>)Undefined(isolate);
+	args[2] = !IsEmptyHandle(arg5) ? arg5->value : (Handle<Value>)Undefined(isolate);
 	Local<Value> result = func->Call(obj, 3, args);
 
 	return NewHandlePointer(isolate, handle_scope.Escape(result));
@@ -711,7 +742,7 @@ int v8_val_id(const char * arg1)
 
 void v8_alloc_field(TmpHandle * arg1, int arg2, TmpHandle * arg3)
 {
-	if (!arg1 || !arg3)
+	if (IsEmptyHandle(arg1) || IsEmptyHandle(arg3))
 	{
 		InternalError("Null object set");
 		return;
@@ -730,7 +761,7 @@ void v8_alloc_field(TmpHandle * arg1, int arg2, TmpHandle * arg3)
 
 TmpHandle * v8_val_field(TmpHandle * arg1, int arg2)
 {
-	if (!arg1)
+	if (IsEmptyHandle(arg1))
 		return InternalError("Null object get");
 	Isolate *isolate = Isolate::GetCurrent();
 	EscapableHandleScope handle_scope(isolate);
@@ -746,7 +777,7 @@ double v8_val_field_numeric(TmpHandle * arg1, int arg2)
 {
 	HandleScope handle_scope(Isolate::GetCurrent());
 	TmpHandle *result = v8_val_field(arg1, arg2);
-	return result ? result->value->NumberValue() : 0;
+	return !IsEmptyHandle(result) ? result->value->NumberValue() : 0;
 }
 
 
@@ -782,7 +813,7 @@ void * v8_alloc_private(int arg1)
 
 void v8_val_gc(TmpHandle * arg1, hxFinalizer arg2)
 {
-	if (!arg1)
+	if (IsEmptyHandle(arg1))
 		return;
 	Isolate *isolate = Isolate::GetCurrent();
 	
