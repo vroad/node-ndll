@@ -447,7 +447,7 @@ TmpHandle *v8_val_to_buffer(TmpHandle * arg1)
 	{
 		HandleScope handle_scope(Isolate::GetCurrent());
 		Local<Object> obj = arg1->value->ToObject();
-		if (obj->HasIndexedPropertiesInExternalArrayData())
+		if (obj->IsTypedArray())
 			return arg1;
 	}
 	else if (arg1->value->IsNull() || arg1->value->IsUndefined())
@@ -501,16 +501,40 @@ int v8_buffer_size(TmpHandle *inBuffer)
 	{
 		HandleScope handle_scope(Isolate::GetCurrent());
 		Local<Object> obj = inBuffer->value->ToObject();
-		if (obj->HasIndexedPropertiesInExternalArrayData())
-			return obj->GetIndexedPropertiesExternalArrayDataLength();
+		if (obj->IsTypedArray())
+			return obj.As<TypedArray>()->Buffer()->GetContents().ByteLength();
 	}
 	return 0;
 }
 
 
-void v8_buffer_set_size(buffer inBuffer, int inLen)
+void v8_buffer_set_size(TmpHandle *inBuffer, int inLen)
 {
-	// TODO:
+	if (IsEmptyHandle(inBuffer))
+		return;
+	if (inBuffer->value->IsObject())
+	{
+		Isolate *isolate = Isolate::GetCurrent();
+		HandleScope handle_scope(isolate);
+		Local<Object> obj = inBuffer->value->ToObject();
+		ArrayBuffer::Contents sourceContents;
+		if (obj->IsTypedArray())
+		{
+			Local<ArrayBuffer> ab = obj.As<TypedArray>()->Buffer();
+			sourceContents = ab->GetContents();
+		}
+		Local<ArrayBuffer> ab = ArrayBuffer::New(isolate, inLen);
+		Local<Uint8Array> u8a = Uint8Array::New(ab, 0, inLen);
+		TmpHandle *newBuffer = NewHandlePointer(isolate, u8a);
+		if (sourceContents.Data() != NULL)
+		{
+			ArrayBuffer::Contents destContents = u8a->Buffer()->GetContents();
+			size_t length = sourceContents.ByteLength() < destContents.ByteLength() ?
+				sourceContents.ByteLength() : destContents.ByteLength();
+			memcpy(destContents.Data(), sourceContents.Data(), length);
+		}
+		inBuffer->value = newBuffer->value;
+	}
 }
 
 
@@ -534,8 +558,8 @@ char * v8_buffer_data(TmpHandle *inBuffer)
 	{
 		HandleScope handle_scope(Isolate::GetCurrent());
 		Local<Object> obj = inBuffer->value->ToObject();
-		if (obj->HasIndexedPropertiesInExternalArrayData())
-			return static_cast<char*>(obj->GetIndexedPropertiesExternalArrayData());
+		if (obj->IsTypedArray())
+			return static_cast<char*>(obj.As<TypedArray>()->Buffer()->GetContents().Data());
 	}
 	else if (inBuffer->value->IsNull() || inBuffer->value->IsUndefined())
 		return 0;
@@ -972,8 +996,9 @@ void *DynamicV8Loader(const char *inName)
 	IMPLEMENT_HERE(val_data)
 	IMPLEMENT_HERE(val_to_buffer)
 	IMPLEMENT_HERE(buffer_data)
-	IMPLEMENT_HERE(buffer_val);
+	IMPLEMENT_HERE(buffer_val)
 	IMPLEMENT_HERE(buffer_size)
+	IMPLEMENT_HERE(buffer_set_size)
 	IMPLEMENT_HERE(kind_share)
 
 	IMPLEMENT_HERE(hx_fail)
