@@ -2,12 +2,14 @@
 #include "V8VMScope.h"
 
 V8HandleContainerList::V8HandleContainerList(Isolate *isolate)
-	: isolate(isolate), sgKinds((int)(valtAbstractBase + 2))
+	: isolate(isolate), sgKinds((int)(valtAbstractBase + 2)), containerListSize(0)
 {
 }
 
 V8HandleContainerList::~V8HandleContainerList()
 {
+	for (size_t i = 0; i < handlePool.size(); ++i)
+		delete handlePool[i];
 }
 
 void V8HandleContainerList::Dispose()
@@ -24,4 +26,92 @@ void V8HandleContainerList::Dispose()
 		delete data;
 	}
 	sgIDToHandle.clear();
+}
+
+void V8HandleContainerList::PushHandleContainer()
+{
+	V8HandleContainer *container;
+	if (containerListSize >= containers.size())
+	{
+		container = new V8HandleContainer(handles.size(), stringValues.size(), wstringValues.size(), intArrayValues.size());
+		containers.push_back(V8HandleContainerPtr(container));
+	}
+	else
+	{
+		container = containers[containerListSize].get();
+		container->handleIndex = handles.size();
+		container->stringIndex = stringValues.size();
+		container->wStringIndex = wstringValues.size();
+		container->intArrayIndex = intArrayValues.size();
+	}
+	++containerListSize;
+}
+
+void V8HandleContainerList::PopHandleContainer()
+{
+	V8HandleContainer *container = containers[containers.size() - 1].get();
+	for (size_t i = container->handleIndex; i < handles.size(); ++i)
+		ReturnHandleToPool(handles[i]);
+	handles.resize(container->handleIndex);
+	stringValues.resize(container->stringIndex);
+	wstringValues.resize(container->wStringIndex);
+	intArrayValues.resize(container->intArrayIndex);
+	//containers.pop_back();
+	--containerListSize;
+}
+
+TmpHandle *V8HandleContainerList::PushHandle(Handle<Value> value)
+{
+	TmpHandle *handle = GetHandleFromPool(value);
+	handles.push_back(handle);
+	return handle;
+}
+
+const char *V8HandleContainerList::PushString(Handle<Value> value)
+{
+	stringValues.push_back(*String::Utf8Value(value));
+	return stringValues[stringValues.size() - 1].c_str();
+}
+
+const wchar_t *V8HandleContainerList::PushWString(Handle<Value> value)
+{
+	wstringValues.push_back((wchar_t*)*String::Value(value));
+	return wstringValues[wstringValues.size() - 1].c_str();
+}
+
+int *V8HandleContainerList::PushIntArray(Handle<Value> value)
+{
+	if (value->IsArray())
+	{
+		std::vector<int> intArray;
+		Handle<Array> array = value.As<Array>();
+		for (uint32_t i = 0; i < array->Length(); i++)
+			intArray.push_back(array->Get(i)->Int32Value());
+
+		intArrayValues.push_back(intArray);
+		return intArray.data();
+	}
+	else
+		return 0;
+}
+
+TmpHandle *V8HandleContainerList::GetHandleFromPool(Handle<Value> value)
+{
+	if (handlePool.empty())
+	{
+		TmpHandle *handle = new TmpHandle(value);
+		return handle;
+	}
+	else
+	{
+		TmpHandle *handle = handlePool[handlePool.size() - 1];
+		handlePool.pop_back();
+		handle->value = value;
+		return handle;
+	}
+}
+
+void V8HandleContainerList::ReturnHandleToPool(TmpHandle *handle)
+{
+	handlePool.push_back(handle);
 }

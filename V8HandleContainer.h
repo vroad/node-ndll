@@ -10,16 +10,22 @@ class V8HandleContainer
 {
 public:
 
-	~V8HandleContainer()
+	V8HandleContainer(size_t handleIndex, size_t stringIndex, size_t wstringIndex, size_t intArrayIndex)
+		: handleIndex(handleIndex),
+		stringIndex(stringIndex),
+		wStringIndex(wstringIndex),
+		intArrayIndex(intArrayIndex)
 	{
-		for (size_t i = 0; i < handles.size(); ++i)
-			delete handles[i];
 	}
 
-	std::vector<TmpHandle*> handles;
-	std::vector<std::string> stringValues;
-	std::vector<std::wstring> wstringValues;
-	std::vector<std::vector<int>> intArrayValues;
+	~V8HandleContainer()
+	{
+	}
+
+	size_t handleIndex;
+	size_t stringIndex;
+	size_t wStringIndex;
+	size_t intArrayIndex;
 };
 
 #endif
