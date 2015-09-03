@@ -2,18 +2,24 @@
 #include "V8VMScope.h"
 
 V8HandleContainerList::V8HandleContainerList(Isolate *isolate)
-	: isolate(isolate), sgKinds((int)(valtAbstractBase + 2)), containerListSize(0)
+	: isolate(isolate), sgKinds((int)(valtAbstractBase + 2)), containerListSize(0), disposed(false)
 {
 }
 
 V8HandleContainerList::~V8HandleContainerList()
 {
-	for (size_t i = 0; i < handlePool.size(); ++i)
-		delete handlePool[i];
+	if (!disposed)
+		printf("V8HandleContainerList::Dispose() is not called.");
 }
 
 void V8HandleContainerList::Dispose()
 {
+	if (disposed)
+	{
+		printf("V8HandleContainerList::Dispose() has been called more than once.\n");
+		return;
+	}
+
 	Locker locker(isolate);
 	Isolate::Scope isolateScope(isolate);
 	HandleScope scope(isolate);
@@ -26,6 +32,9 @@ void V8HandleContainerList::Dispose()
 		delete data;
 	}
 	sgIDToHandle.clear();
+	for (size_t i = 0; i < handlePool.size(); ++i)
+		delete handlePool[i];
+	disposed = true;
 }
 
 void V8HandleContainerList::PushHandleContainer()

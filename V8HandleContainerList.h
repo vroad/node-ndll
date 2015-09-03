@@ -60,6 +60,8 @@ public:
 	std::list< V8WeakHandleData* > weakHandles;
 	KindMap sgKindMap;
 	int sgKinds;
+
+	bool disposed;
 };
 
 #endif
