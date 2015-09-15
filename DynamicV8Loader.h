@@ -1,7 +1,7 @@
 #ifndef _DYNAMICV8LOADER_H_
 #define _DYNAMICV8LOADER_H_
 
-#include <node.h>
+#include <node_buffer.h>
 #include <stdio.h>
 // Get headers etc.
 
@@ -449,6 +449,8 @@ TmpHandle *v8_val_to_buffer(TmpHandle * arg1)
 		Local<Object> obj = arg1->value->ToObject();
 		if (obj->IsTypedArray())
 			return arg1;
+		else if (node::Buffer::HasInstance(obj))
+			return arg1;
 	}
 	else if (arg1->value->IsNull() || arg1->value->IsUndefined())
 		return arg1;
@@ -560,6 +562,8 @@ char * v8_buffer_data(TmpHandle *inBuffer)
 		Local<Object> obj = inBuffer->value->ToObject();
 		if (obj->IsTypedArray())
 			return static_cast<char*>(obj.As<TypedArray>()->Buffer()->GetContents().Data());
+		else if (node::Buffer::HasInstance(obj))
+			return static_cast<char*>(node::Buffer::Data(obj));
 	}
 	else if (inBuffer->value->IsNull() || inBuffer->value->IsUndefined())
 		return 0;
