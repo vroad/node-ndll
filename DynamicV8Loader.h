@@ -302,7 +302,9 @@ int v8_val_strlen(TmpHandle * arg1)
 const wchar_t * v8_val_wstring(TmpHandle * arg1)
 {
 	if (IsEmptyHandle(arg1))
-		return L"";
+		return 0;
+	else if (arg1->value->IsUndefined() || arg1->value->IsNull())
+		return 0;
 	return ToWChar(Isolate::GetCurrent(), arg1->value);
 }
 
@@ -310,7 +312,9 @@ const wchar_t * v8_val_wstring(TmpHandle * arg1)
 const char * v8_val_string(TmpHandle * arg1)
 {
 	if (IsEmptyHandle(arg1))
-		return "";
+		return 0;
+	else if (arg1->value->IsUndefined() || arg1->value->IsNull())
+		return 0;
 	return ToChar(Isolate::GetCurrent(), arg1->value);
 }
 
