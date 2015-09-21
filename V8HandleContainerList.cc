@@ -58,7 +58,7 @@ void V8HandleContainerList::PushHandleContainer()
 
 void V8HandleContainerList::PopHandleContainer()
 {
-	V8HandleContainer *container = containers[containers.size() - 1].get();
+	V8HandleContainer *container = containers[containerListSize - 1].get();
 	for (size_t i = container->handleIndex; i < handles.size(); ++i)
 		ReturnHandleToPool(handles[i]);
 	handles.resize(container->handleIndex);
