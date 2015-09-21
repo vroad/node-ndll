@@ -852,8 +852,6 @@ void v8_val_gc(TmpHandle * arg1, hxFinalizer arg2)
 	if (IsEmptyHandle(arg1))
 		return;
 	Isolate *isolate = Isolate::GetCurrent();
-
-	assert(arg2);
 	
 	V8HandleContainerList *list = GetV8HandleContainerList(isolate);
 	V8WeakHandleData *data = new V8WeakHandleData(isolate, arg1->value, arg2);
