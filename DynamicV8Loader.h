@@ -5,7 +5,9 @@
 #include <stdio.h>
 // Get headers etc.
 
+#ifndef IGNORE_CFFI_API_H
 #define IGNORE_CFFI_API_H
+#endif
 
 #include "hx/CFFI.h"
 #include <vector>
@@ -13,6 +15,7 @@
 #include <string>
 
 #include "HandleUtils.h"
+#include "AbstractData.h"
 
 using namespace v8;
 
@@ -36,12 +39,6 @@ bool IsEmptyHandle(TmpHandle *handle)
 		return false;
 }
 
-struct AbstractData
-{
-	vkind mKind;
-	void  *mPayload;
-};
-
 int hxcpp_alloc_kind()
 {
 	V8HandleContainerList *list = GetV8HandleContainerList(Isolate::GetCurrent());
@@ -63,7 +60,8 @@ void WeakCallback(const WeakCallbackData<Value, V8WeakHandleData>& data)
 {
 	V8WeakHandleData *weakData = data.GetParameter();
 	TmpHandle handle(data.GetValue());
-	weakData->finalizer((value)&handle);
+	if (weakData->finalizer)
+		weakData->finalizer((value)&handle);
 	weakData->value.Reset();
 	
 	V8HandleContainerList *list = GetV8HandleContainerList(data.GetIsolate());
@@ -130,8 +128,7 @@ int v8_val_type(TmpHandle * _arg1)
 	if (arg1->IsFunction())
 		return valtFunction;
 
-	Handle<Value> h_arg1 = Handle<External>::Cast(arg1);
-	if (!h_arg1.IsEmpty())
+	if (arg1->IsExternal())
 		return valtAbstractBase;
 
 	return valtObject;
@@ -139,12 +136,15 @@ int v8_val_type(TmpHandle * _arg1)
 
 vkind v8_val_kind(TmpHandle * arg1)
 {
-	HandleScope handle_scope(Isolate::GetCurrent());
 	if (IsEmptyHandle(arg1))
 	{
 		InternalError("Null value has not 'kind'");
 		return 0;
 	}
+	if (!arg1->value->IsExternal())
+		return 0;
+
+	HandleScope handle_scope(Isolate::GetCurrent());
 	Handle<External> h_arg1 = arg1->value.As<External>();
 
 	AbstractData *data = (AbstractData *)h_arg1->Value();
@@ -162,7 +162,7 @@ void * v8_val_to_kind(TmpHandle * arg1, vkind arg2)
 {
 	if (IsEmptyHandle(arg1))
 		return 0;
-	if (arg1->value->IsExternal())
+	if (!arg1->value->IsExternal())
 		return 0;
 
 	v8::HandleScope handle_scope(Isolate::GetCurrent());
@@ -179,6 +179,8 @@ void * v8_val_to_kind(TmpHandle * arg1, vkind arg2)
 void * v8_val_data(TmpHandle * arg1)
 {
 	if (IsEmptyHandle(arg1))
+		return 0;
+	if (!arg1->value->IsExternal())
 		return 0;
 
 	v8::HandleScope handle_scope(Isolate::GetCurrent());
@@ -278,6 +280,8 @@ TmpHandle * v8_alloc_abstract(vkind arg1, void * arg2)
 	data->mPayload = arg2;
 
 	Isolate *isolate = Isolate::GetCurrent();
+	V8HandleContainerList *list = GetV8HandleContainerList(isolate);
+	list->abstractDataList.push_back(std::unique_ptr<AbstractData>(data));
 	return NewHandlePointer(isolate, External::New(isolate, data));
 }
 
@@ -591,9 +595,9 @@ if (IsEmptyHandle(arg1)) \
 	return InternalError("Null Function Call"); \
 Isolate *isolate = Isolate::GetCurrent(); \
 EscapableHandleScope handle_scope(isolate); \
+if (!arg1->value->IsFunction()) \
+	return InternalError("Calling non function"); \
 Handle<Function> func = arg1->value.As<Function>(); \
-if (func.IsEmpty()) \
-	return InternalError("Calling non-function");
 
 
 
@@ -848,6 +852,8 @@ void v8_val_gc(TmpHandle * arg1, hxFinalizer arg2)
 	if (IsEmptyHandle(arg1))
 		return;
 	Isolate *isolate = Isolate::GetCurrent();
+
+	assert(arg2);
 	
 	V8HandleContainerList *list = GetV8HandleContainerList(isolate);
 	V8WeakHandleData *data = new V8WeakHandleData(isolate, arg1->value, arg2);
