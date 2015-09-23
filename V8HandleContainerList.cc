@@ -28,7 +28,8 @@ void V8HandleContainerList::Dispose()
 	{
 		V8WeakHandleData *data = (*it);
 		TmpHandle handle(Local<Value>::New(isolate, data->value));
-		data->finalizer((value)&handle);
+		if (data->finalizer)
+			data->finalizer((value)&handle);
 		delete data;
 	}
 	sgIDToHandle.clear();
