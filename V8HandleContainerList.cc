@@ -2,7 +2,7 @@
 #include "V8VMScope.h"
 
 V8HandleContainerList::V8HandleContainerList(Isolate *isolate)
-	: isolate(isolate), sgKinds((int)(valtAbstractBase + 2)), containerListSize(0), disposed(false)
+	: isolate(isolate), containerListSize(0), disposed(false)
 {
 }
 

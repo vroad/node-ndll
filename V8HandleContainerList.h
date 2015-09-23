@@ -61,8 +61,6 @@ public:
 	std::vector< Persistent<String, CopyablePersistentTraits<String>> > sgIDToHandle;
 	std::list< V8WeakHandleData* > weakHandles;
 	std::vector< AbstractDataPtr > abstractDataList;
-	KindMap sgKindMap;
-	int sgKinds;
 
 	bool disposed;
 };

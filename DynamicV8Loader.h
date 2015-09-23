@@ -22,6 +22,9 @@ using namespace v8;
 vkind k_int32 = (vkind)valtAbstractBase;
 vkind k_hash = (vkind)(valtAbstractBase + 1);
 
+KindMap sgKindMap;
+int sgKinds = (int)(valtAbstractBase + 2);
+
 TmpHandle *InternalError(const char *inMessage)
 {
 	fprintf(stderr, "Internal error:%s\n", inMessage);
@@ -41,15 +44,13 @@ bool IsEmptyHandle(TmpHandle *handle)
 
 int hxcpp_alloc_kind()
 {
-	V8HandleContainerList *list = GetV8HandleContainerList(Isolate::GetCurrent());
-	return ++list->sgKinds;
+	return ++sgKinds;
 }
 
 
 void hxcpp_kind_share(int &ioKind, const char *inName)
 {
-	V8HandleContainerList *list = GetV8HandleContainerList(Isolate::GetCurrent());
-	int &kind = list->sgKindMap[inName];
+	int &kind = sgKindMap[inName];
 	if (kind == 0)
 		kind = hxcpp_alloc_kind();
 	ioKind = kind;
