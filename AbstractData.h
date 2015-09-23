@@ -6,7 +6,6 @@
 #endif
 
 #include "hx/CFFI.h"
-#include <v8.h>
 
 struct AbstractData
 {

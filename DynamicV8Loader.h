@@ -281,9 +281,25 @@ TmpHandle * v8_alloc_abstract(vkind arg1, void * arg2)
 	data->mPayload = arg2;
 
 	Isolate *isolate = Isolate::GetCurrent();
-	V8HandleContainerList *list = GetV8HandleContainerList(isolate);
-	list->abstractDataList.push_back(std::unique_ptr<AbstractData>(data));
-	return NewHandlePointer(isolate, External::New(isolate, data));
+	HandleScope scope(isolate);
+	Local<External> external = External::New(isolate, data);
+
+	return NewHandlePointer(isolate, external);
+}
+
+TmpHandle * v8_free_abstract(TmpHandle * arg1)
+{
+	if (IsEmptyHandle(arg1))
+		return v8_alloc_null();
+	if (!arg1->value->IsExternal())
+		return v8_alloc_null();
+	Isolate *isolate = Isolate::GetCurrent();
+	HandleScope scope(isolate);
+	Local<External> external = arg1->value.As<External>();
+	AbstractData *data = (AbstractData*)external->Value();
+	delete data;
+	arg1->value.Clear();
+	return v8_alloc_null();
 }
 
 TmpHandle * v8_alloc_best_int(int arg1) { return v8_alloc_int(arg1); }
@@ -1003,6 +1019,7 @@ void *DynamicV8Loader(const char *inName)
 	IMPLEMENT_HERE(alloc_array)
 	IMPLEMENT_HERE(alloc_root)
 	IMPLEMENT_HERE(alloc_abstract)
+	IMPLEMENT_HERE(free_abstract)
 	IMPLEMENT_HERE(alloc_kind)
 	IMPLEMENT_HERE(alloc_field)
 	IMPLEMENT_HERE(val_gc)
