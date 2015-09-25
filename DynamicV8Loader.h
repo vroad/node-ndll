@@ -42,6 +42,40 @@ bool IsEmptyHandle(TmpHandle *handle)
 		return false;
 }
 
+void WeakCallback(const WeakCallbackData<Value, V8WeakHandleData>& data)
+{
+	V8WeakHandleData *weakData = data.GetParameter();
+	TmpHandle handle(data.GetValue());
+	if (weakData->finalizer)
+		weakData->finalizer((value)&handle);
+	weakData->value.Reset();
+
+	V8HandleContainerList *list = GetV8HandleContainerList(data.GetIsolate());
+	list->weakHandles.erase(weakData->it);
+	delete weakData;
+}
+
+V8WeakHandleData *SetWeakHandleData(Isolate *isolate, Handle<Value> value, hxFinalizer arg2)
+{
+	V8HandleContainerList *list = GetV8HandleContainerList(isolate);
+	V8WeakHandleData *data = new V8WeakHandleData(isolate, value, arg2);
+	list->weakHandles.push_back(data);
+	data->it = list->weakHandles.end();
+	--data->it;
+
+	data->value.SetWeak<V8WeakHandleData>(data, WeakCallback);
+	return data;
+}
+
+void gc_AbstractData(value arg1)
+{
+	Handle<External> external = ((TmpHandle*)arg1)->value.As<External>();
+	AbstractData *data = (AbstractData*)external->Value();
+	if (data->userFinalizer)
+		data->userFinalizer(arg1);
+	delete data;
+}
+
 int hxcpp_alloc_kind()
 {
 	return ++sgKinds;
@@ -56,19 +90,6 @@ void hxcpp_kind_share(int &ioKind, const char *inName)
 	ioKind = kind;
 }
 
-
-void WeakCallback(const WeakCallbackData<Value, V8WeakHandleData>& data)
-{
-	V8WeakHandleData *weakData = data.GetParameter();
-	TmpHandle handle(data.GetValue());
-	if (weakData->finalizer)
-		weakData->finalizer((value)&handle);
-	weakData->value.Reset();
-	
-	V8HandleContainerList *list = GetV8HandleContainerList(data.GetIsolate());
-	list->weakHandles.erase(weakData->it);
-	delete weakData;
-}
 
 /*
 This bit of Macro magic is used to define extern function pointers
@@ -279,10 +300,13 @@ TmpHandle * v8_alloc_abstract(vkind arg1, void * arg2)
 	AbstractData *data = new AbstractData;
 	data->mKind = arg1;
 	data->mPayload = arg2;
+	data->userFinalizer = NULL;
 
 	Isolate *isolate = Isolate::GetCurrent();
 	HandleScope scope(isolate);
 	Local<External> external = External::New(isolate, data);
+
+	SetWeakHandleData(isolate, external, gc_AbstractData);
 
 	return NewHandlePointer(isolate, external);
 }
@@ -870,13 +894,14 @@ void v8_val_gc(TmpHandle * arg1, hxFinalizer arg2)
 		return;
 	Isolate *isolate = Isolate::GetCurrent();
 	
-	V8HandleContainerList *list = GetV8HandleContainerList(isolate);
-	V8WeakHandleData *data = new V8WeakHandleData(isolate, arg1->value, arg2);
-	list->weakHandles.push_back(data);
-	data->it = list->weakHandles.end();
-	--data->it;
-	
-	data->value.SetWeak<V8WeakHandleData>(data, WeakCallback);
+	if (arg1->value->IsExternal())
+	{
+		Handle<External> external = arg1->value.As<External>();
+		AbstractData *data = (AbstractData*)external->Value();
+		data->userFinalizer = arg2;
+	}
+	else
+		SetWeakHandleData(isolate, arg1->value, arg2);
 }
 
 void v8_val_gc_ptr(void * arg1, hxPtrFinalizer arg2)
