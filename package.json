@@ -1,6 +1,6 @@
 {
   "name": "ndll",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "main": "ndll.js",
   "description": "NDLL wrapper for Node.js",
   "gypfile": true,
