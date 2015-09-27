@@ -194,4 +194,4 @@ NODE_NDLL_EXPORT void Init(Handle<Object> exports) {
 }
 }
 
-NODE_MODULE(node_ndll, Init)
+NODE_MODULE(ndll, Init)
