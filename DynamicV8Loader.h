@@ -610,7 +610,12 @@ char * v8_buffer_data(TmpHandle *inBuffer)
 		HandleScope handle_scope(Isolate::GetCurrent());
 		Local<Object> obj = inBuffer->value->ToObject();
 		if (obj->IsTypedArray())
-			return static_cast<char*>(obj.As<TypedArray>()->Buffer()->GetContents().Data());
+		{
+			Local<TypedArray> ta = obj.As<TypedArray>();
+			char *data = static_cast<char*>(ta->Buffer()->GetContents().Data());
+			data += ta->ByteOffset();
+			return data;
+		}
 		else if (node::Buffer::HasInstance(obj))
 			return static_cast<char*>(node::Buffer::Data(obj));
 	}
