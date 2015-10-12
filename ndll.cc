@@ -16,6 +16,20 @@
 #define NODE_NDLL_EXPORT
 #endif
 
+#include<sstream>
+template <typename T>
+std::string to_string(T value)
+{
+	//create an output string stream
+	std::ostringstream os ;
+
+	//throw the value into the string stream
+	os << value ;
+
+	//convert the string stream into a string and return
+	return os.str() ;
+}
+
 using namespace v8;
 
 typedef void (hx_set_loader_t)(ResolveProc);
@@ -61,16 +75,18 @@ void Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	HandleScope handle_scope(isolate);
 	String::Utf8Value utf8Lib(args[0]), utf8Name(args[1]);
 	std::string lib = *utf8Lib;
-	lib += ".dll";
 	std::unique_ptr<uv_lib_t> uvLib(new uv_lib_t());
 	int result;
+	#ifndef __ANDROID__
+	lib += ".ndll";
 	if (result = uv_dlopen(lib.c_str(), uvLib.get()))
 	{
 		lib = *utf8Lib;
-		lib += ".ndll";
+		lib += ".dll";
 		result = uv_dlopen(lib.c_str(), uvLib.get());
 	}
-	if (result)
+	#endif
+	if (result = uv_dlopen(lib.c_str(), uvLib.get()))
 	{
 		printf("Could not load %s.\n", lib.c_str());
 		return;
@@ -80,7 +96,7 @@ void Load(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	name += "__";
 	int numArgs = args[2]->Int32Value();
 	if (numArgs != -1)
-		name += std::to_string(numArgs);
+		name += to_string(numArgs);
 	else
 		name += "MULT";
 	hx_set_loader_t *dll_hx_set_loader;
