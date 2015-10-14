@@ -48,7 +48,6 @@ void WeakCallback(const WeakCallbackData<Value, V8WeakHandleData>& data)
 	TmpHandle handle(data.GetValue());
 	if (weakData->finalizer)
 		weakData->finalizer((value)&handle);
-	weakData->value.Reset();
 
 	V8HandleContainerList *list = GetV8HandleContainerList(data.GetIsolate());
 	list->weakHandles.erase(weakData->it);
