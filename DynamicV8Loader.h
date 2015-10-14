@@ -317,7 +317,7 @@ TmpHandle * v8_alloc_abstract(vkind arg1, void * arg2)
 
 	Isolate *isolate = Isolate::GetCurrent();
 	V8HandleContainerList *list = GetV8HandleContainerList(isolate);
-	HandleScope scope(isolate);
+	EscapableHandleScope scope(isolate);
 	
 	Local<ObjectTemplate> templ = Local<ObjectTemplate>::New(isolate, list->abstractTemplate);
 	Local<Object> object = templ->NewInstance();
@@ -325,7 +325,7 @@ TmpHandle * v8_alloc_abstract(vkind arg1, void * arg2)
 
 	SetWeakHandleData(isolate, object, gc_AbstractData);
 
-	return NewHandlePointer(isolate, object);
+	return NewHandlePointer(isolate, scope.Escape(object));
 }
 
 void v8_free_abstract(TmpHandle * arg1)
