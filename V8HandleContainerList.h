@@ -60,6 +60,8 @@ public:
 	std::vector< Persistent<String, CopyablePersistentTraits<String>> > sgIDToHandle;
 	std::list< V8WeakHandleData* > weakHandles;
 
+	Persistent<ObjectTemplate> abstractTemplate;
+
 	bool disposed;
 };
 

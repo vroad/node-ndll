@@ -4,6 +4,9 @@
 V8HandleContainerList::V8HandleContainerList(Isolate *isolate)
 	: isolate(isolate), containerListSize(0), disposed(false)
 {
+	Local<ObjectTemplate> templ = ObjectTemplate::New(isolate);
+	templ->SetInternalFieldCount(1);
+	abstractTemplate.Reset(isolate, templ);
 }
 
 V8HandleContainerList::~V8HandleContainerList()
