@@ -51,6 +51,8 @@ void WeakCallback(const WeakCallbackData<Value, V8WeakHandleData>& data)
 
 	V8HandleContainerList *list = GetV8HandleContainerList(data.GetIsolate());
 	list->weakHandles.erase(weakData->it);
+	
+	weakData->value.ClearWeak();
 	delete weakData;
 }
 
