@@ -30,7 +30,8 @@ void V8HandleContainerList::Dispose()
 	for (std::list< V8WeakHandleData* >::const_iterator it = weakHandles.begin(); it != weakHandles.end(); ++it)
 	{
 		V8WeakHandleData *data = (*it);
-		TmpHandle handle(Local<Value>::New(isolate, data->value));
+		Local<Value> val = Local<Value>::New(isolate, data->value);
+		TmpHandle handle(val);
 		if (data->finalizer)
 			data->finalizer((value)&handle);
 		delete data;
