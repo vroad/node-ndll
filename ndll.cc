@@ -136,12 +136,13 @@ void CallNDLLFunc(const v8::FunctionCallbackInfo<v8::Value>& args) {
 	Handle<External> data = Handle<External>::Cast(args.Data());
 	CFuncData *funcData = (CFuncData*)data->Value();
 	TmpHandle *ret = 0;
-
-	std::vector<TmpHandle> handles;
-	for (int i = 0; i < args.Length(); ++i)
-		handles.push_back(TmpHandle(args[i]));
+	
 	if (funcData->nargs == -1)
 	{
+		std::vector<TmpHandle> handles;
+		for (int i = 0; i < args.Length(); ++i)
+			handles.push_back(TmpHandle(args[i]));
+
 		prim_multi_t *cfunc = (prim_multi_t*)funcData->func();
 		std::vector<TmpHandle*> cargs;
 		for (int i = 0; i < args.Length(); ++i)
@@ -153,35 +154,43 @@ void CallNDLLFunc(const v8::FunctionCallbackInfo<v8::Value>& args) {
 		prim_0_t *cfunc = (prim_0_t*)funcData->func();
 		ret = cfunc();
 	}
-	else if (funcData->nargs == 1)
+	else
 	{
-		prim_1_t *cfunc = (prim_1_t*)funcData->func();
-		ret = cfunc(&handles[0]);
-	}
-	else if (funcData->nargs == 2)
-	{
-		prim_2_t *cfunc = (prim_2_t*)funcData->func();
-		ret = cfunc(&handles[0], &handles[1]);
-	}
-	else if (funcData->nargs == 3)
-	{
-		prim_3_t *cfunc = (prim_3_t*)funcData->func();
-		ret = cfunc(&handles[0], &handles[1], &handles[2]);
-	}
-	else if (funcData->nargs == 4)
-	{
-		prim_4_t *cfunc = (prim_4_t*)funcData->func();
-		ret = cfunc(&handles[0], &handles[1], &handles[2], &handles[3]);
-	}
-	else if (funcData->nargs == 5)
-	{
-		prim_5_t *cfunc = (prim_5_t*)funcData->func();
-		ret = cfunc(&handles[0], &handles[1], &handles[2], &handles[3], &handles[4]);
-	}
-	else if (funcData->nargs == 6)
-	{
-		prim_6_t *cfunc = (prim_6_t*)funcData->func();
-		ret = cfunc(&handles[0], &handles[1], &handles[2], &handles[3], &handles[4], &handles[5]);
+		TmpHandle handles[6];
+		int argLength = args.Length() > 6 ? 6 : args.Length();
+		for (int i = 0; i < argLength; ++i)
+			handles[i] = TmpHandle(args[i]);
+
+		if (funcData->nargs == 1)
+		{
+			prim_1_t *cfunc = (prim_1_t*)funcData->func();
+			ret = cfunc(&handles[0]);
+		}
+		else if (funcData->nargs == 2)
+		{
+			prim_2_t *cfunc = (prim_2_t*)funcData->func();
+			ret = cfunc(&handles[0], &handles[1]);
+		}
+		else if (funcData->nargs == 3)
+		{
+			prim_3_t *cfunc = (prim_3_t*)funcData->func();
+			ret = cfunc(&handles[0], &handles[1], &handles[2]);
+		}
+		else if (funcData->nargs == 4)
+		{
+			prim_4_t *cfunc = (prim_4_t*)funcData->func();
+			ret = cfunc(&handles[0], &handles[1], &handles[2], &handles[3]);
+		}
+		else if (funcData->nargs == 5)
+		{
+			prim_5_t *cfunc = (prim_5_t*)funcData->func();
+			ret = cfunc(&handles[0], &handles[1], &handles[2], &handles[3], &handles[4]);
+		}
+		else if (funcData->nargs == 6)
+		{
+			prim_6_t *cfunc = (prim_6_t*)funcData->func();
+			ret = cfunc(&handles[0], &handles[1], &handles[2], &handles[3], &handles[4], &handles[5]);
+		}
 	}
 
 	if (ret)

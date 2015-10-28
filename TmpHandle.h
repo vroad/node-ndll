@@ -9,6 +9,10 @@ class TmpHandle
 {
 public:
 
+	TmpHandle()
+	{
+	}
+
 	TmpHandle(Handle<Value> value)
 		: value(value)
 	{
