@@ -127,5 +127,6 @@ TmpHandle *V8HandleContainerList::GetHandleFromPool(Handle<Value> value)
 
 void V8HandleContainerList::ReturnHandleToPool(TmpHandle *handle)
 {
+	handle->value.Clear();
 	handlePool.push_back(handle);
 }
