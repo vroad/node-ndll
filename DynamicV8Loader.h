@@ -929,7 +929,7 @@ void v8_val_gc(TmpHandle * arg1, hxFinalizer arg2)
 		{
 			Local<External> external = field.As<External>();
 			AbstractData *data = (AbstractData*)external->Value();
-			if (data->userFinalizer)
+			if (data->userFinalizer && arg2 != nullptr)
 				InternalError("val_gc - finalizer is already set");
 			else
 				data->userFinalizer = arg2;
