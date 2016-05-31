@@ -935,12 +935,10 @@ void v8_val_gc(TmpHandle * arg1, hxFinalizer arg2)
 				data->userFinalizer = arg2;
 		}
 		else
-		{
-			SetWeakHandleData(isolate, arg1->value, arg2);
-		}
+			InternalError("val_gc - Tried to set finalizer to non-abstract");
 	}
 	else
-		SetWeakHandleData(isolate, arg1->value, arg2);
+		InternalError("val_gc - Tried to set finalizer to non-object");
 }
 
 void v8_val_gc_ptr(void * arg1, hxPtrFinalizer arg2)
