@@ -7,7 +7,7 @@ You need to have some C++ compiler installed to build this addon with node-gyp. 
 
 To install node-ndll globally, use:
 
-    npm -g install node-ndll
+    npm -g install ndll
 
 Note that you also need to set NODE_PATH manually to load globally installed modules.
 On windows, set this to
