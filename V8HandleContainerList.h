@@ -6,7 +6,6 @@
 #include <map>
 #include <vector>
 #include <memory>
-#include "AbstractData.h"
 #include "V8WeakHandleData.h"
 #include "V8HandleContainer.h"
 

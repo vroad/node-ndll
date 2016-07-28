@@ -15,7 +15,7 @@
 #include <string>
 
 #include "HandleUtils.h"
-#include "AbstractData.h"
+#include "AbstractField.h"
 
 using namespace v8;
 
@@ -78,17 +78,17 @@ void gc_AbstractData(value arg1)
 	Isolate *isolate = Isolate::GetCurrent();
 	HandleScope scope(isolate);
 	Local<Object> object = handle->value->ToObject();
-	Local<Value> field = object->GetInternalField(0);
+	Local<Value> field = object->GetInternalField(AF_FINALIZER);
 	if (field.IsEmpty())
 		return;
 	if (!field->IsExternal())
 		return;
 	Local<External> external = field.As<External>();
-	AbstractData *data = (AbstractData*)external->Value();
-	if (data->userFinalizer)
-		data->userFinalizer(arg1);
-	delete data;
-	object->SetInternalField(0, Null(isolate));
+	hxFinalizer userFinalizer = (hxFinalizer)external->Value();
+	if (userFinalizer)
+		userFinalizer(arg1);
+	object->SetInternalField(AF_PAYLOAD, Null(isolate));
+	object->SetInternalField(AF_FINALIZER, Null(isolate));
 }
 
 int hxcpp_alloc_kind()
@@ -183,18 +183,14 @@ vkind v8_val_kind(TmpHandle * arg1)
 		return 0;
 
 	HandleScope handle_scope(Isolate::GetCurrent());
-	Local<Value> field = arg1->value->ToObject()->GetInternalField(0);
+	Local<Value> field = arg1->value->ToObject()->GetInternalField(AF_KIND);
 	if (field.IsEmpty())
 		return 0;
-	if (!field->IsExternal())
+	if (!field->IsInt32())
 		return 0;
 
-	Local<External> external = field.As<External>();
-	AbstractData *data = (AbstractData *)external->Value();
-	if (!data)
-		return 0;
-
-	return data->mKind;
+	Local<Int32> kind = field->ToInt32();
+	return (vkind)kind->Int32Value();
 }
 
 
@@ -206,17 +202,22 @@ void * v8_val_to_kind(TmpHandle * arg1, vkind arg2)
 		return 0;
 
 	v8::HandleScope handle_scope(Isolate::GetCurrent());
-	Local<Value> field = arg1->value->ToObject()->GetInternalField(0);
-	if (field.IsEmpty())
+	Local<Object> object = arg1->value->ToObject();
+	Local<Value> kindField = object->GetInternalField(AF_KIND);
+	if (kindField.IsEmpty())
 		return 0;
-	if (!field->IsExternal())
+	if (!kindField->IsInt32())
 		return 0;
-	Local<External> external = field.As<External>();
-	AbstractData *data = (AbstractData *)external->Value();
-	if (!data || data->mKind != arg2)
+	vkind kind = (vkind)kindField->Int32Value();
+	if (kind != arg2)
 		return 0;
-
-	return data->mPayload;
+	Local<Value> extField = object->GetInternalField(AF_PAYLOAD);
+	if (extField.IsEmpty())
+		return 0;
+	if (!extField->IsExternal())
+		return 0;
+	Local<External> external = extField.As<External>();
+	return external->Value();
 }
 
 
@@ -229,17 +230,13 @@ void * v8_val_data(TmpHandle * arg1)
 		return 0;
 
 	v8::HandleScope handle_scope(Isolate::GetCurrent());
-	Local<Value> field = arg1->value->ToObject()->GetInternalField(0);
+	Local<Value> field = arg1->value->ToObject()->GetInternalField(AF_PAYLOAD);
 	if (field.IsEmpty())
 		return 0;
 	if (!field->IsExternal())
 		return 0;
 	Local<External> external = field.As<External>();
-	AbstractData *data = (AbstractData *)external->Value();
-	if (!data)
-		return 0;
-
-	return data->mPayload;
+	return external->Value();
 }
 
 
@@ -325,18 +322,15 @@ TmpHandle * v8_alloc_empty_object()
 
 TmpHandle * v8_alloc_abstract(vkind arg1, void * arg2)
 {
-	AbstractData *data = new AbstractData;
-	data->mKind = arg1;
-	data->mPayload = arg2;
-	data->userFinalizer = NULL;
-
 	Isolate *isolate = Isolate::GetCurrent();
 	V8HandleContainerList *list = GetV8HandleContainerList(isolate);
 	EscapableHandleScope scope(isolate);
 	
 	Local<ObjectTemplate> templ = Local<ObjectTemplate>::New(isolate, list->abstractTemplate);
 	Local<Object> object = templ->NewInstance();
-	object->SetInternalField(0, External::New(isolate, data));
+
+	object->SetInternalField(AF_KIND, Int32::New(isolate, (int32_t)arg1));
+	object->SetInternalField(AF_PAYLOAD, External::New(isolate, arg2));
 
 	SetWeakHandleData(isolate, object, gc_AbstractData);
 
@@ -345,7 +339,16 @@ TmpHandle * v8_alloc_abstract(vkind arg1, void * arg2)
 
 void v8_free_abstract(TmpHandle * arg1)
 {
-	gc_AbstractData((value)arg1);
+	TmpHandle *handle = (TmpHandle*)arg1;
+	if (IsEmptyHandle(handle))
+		return;
+	if (!handle->value->IsObject())
+		return;
+	Isolate *isolate = Isolate::GetCurrent();
+	HandleScope scope(isolate);
+	Local<Object> object = handle->value->ToObject();
+	object->SetInternalField(AF_PAYLOAD, Null(isolate));
+	object->SetInternalField(AF_FINALIZER, Null(isolate));
 }
 
 TmpHandle * v8_alloc_best_int(int arg1) { return v8_alloc_int(arg1); }
@@ -924,15 +927,16 @@ void v8_val_gc(TmpHandle * arg1, hxFinalizer arg2)
 	if (arg1->value->IsObject())
 	{
 		Local<Object> object = arg1->value.As<Object>();
-		Local<Value> field = object->GetInternalField(0);
-		if (!field.IsEmpty() && field->IsExternal())
+		Local<Value> extField = object->GetInternalField(AF_PAYLOAD);
+		if (!extField.IsEmpty() && extField->IsExternal())
 		{
-			Local<External> external = field.As<External>();
-			AbstractData *data = (AbstractData*)external->Value();
-			if (data->userFinalizer && arg2 != nullptr)
+			Local<Value> finalizerField = object->GetInternalField(AF_FINALIZER);
+			Local<External> external = finalizerField.As<External>();
+			hxFinalizer finalizer = (hxFinalizer)external->Value();
+			if (finalizer && arg2 != nullptr)
 				InternalError("val_gc - finalizer is already set");
 			else
-				data->userFinalizer = arg2;
+				object->SetInternalField(AF_FINALIZER, External::New(isolate, arg2));
 		}
 		else
 			InternalError("val_gc - Tried to set finalizer to non-abstract");
@@ -1085,6 +1089,7 @@ void *DynamicV8Loader(const char *inName)
 	IMPLEMENT_HERE(alloc_kind)
 	IMPLEMENT_HERE(alloc_field)
 	IMPLEMENT_HERE(val_gc)
+	IMPLEMENT_HERE(val_kind)
 	IMPLEMENT_HERE(val_to_kind)
 	IMPLEMENT_HERE(val_id)
 	IMPLEMENT_HERE(val_data)
