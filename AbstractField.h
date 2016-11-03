@@ -5,7 +5,7 @@ enum AbstractField
 {
 	AF_KIND = 0,
 	AF_PAYLOAD,
-	AF_FINALIZER
+	AF_WEAKDATA
 };
 
 #endif

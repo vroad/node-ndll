@@ -42,53 +42,26 @@ bool IsEmptyHandle(TmpHandle *handle)
 		return false;
 }
 
-void WeakCallback(const WeakCallbackData<Value, V8WeakHandleData>& data)
+void DeleteWeakData(Isolate *isolate, V8WeakHandleData *weakData)
 {
-	V8WeakHandleData *weakData = data.GetParameter();
-	TmpHandle handle(data.GetValue());
-	if (weakData->finalizer)
-		weakData->finalizer((value)&handle);
-
-	V8HandleContainerList *list = GetV8HandleContainerList(data.GetIsolate());
+	V8HandleContainerList *list = GetV8HandleContainerList(isolate);
 	list->weakHandles.erase(weakData->it);
-	
+
 	weakData->value.ClearWeak();
+	weakData->value.Reset();
 	delete weakData;
 }
 
-V8WeakHandleData *SetWeakHandleData(Isolate *isolate, Handle<Value> value, hxFinalizer arg2)
+void WeakCallback(const WeakCallbackData<Value, V8WeakHandleData>& data)
 {
-	V8HandleContainerList *list = GetV8HandleContainerList(isolate);
-	V8WeakHandleData *data = new V8WeakHandleData(isolate, value, arg2);
-	list->weakHandles.push_back(data);
-	data->it = list->weakHandles.end();
-	--data->it;
+	V8WeakHandleData *weakData = data.GetParameter();
+	Local<Value> obj = data.GetValue();
+	TmpHandle handle(obj);
+	if (weakData->finalizer)
+		weakData->finalizer((value)&handle);
 
-	data->value.SetWeak<V8WeakHandleData>(data, WeakCallback);
-	return data;
-}
-
-void gc_AbstractData(value arg1)
-{
-	TmpHandle *handle = (TmpHandle*)arg1;
-	if (IsEmptyHandle(handle))
-		return;
-	if (!handle->value->IsObject())
-		return;
-	Isolate *isolate = Isolate::GetCurrent();
-	HandleScope scope(isolate);
-	Local<Object> object = handle->value->ToObject();
-	Local<Value> field = object->GetInternalField(AF_FINALIZER);
-	if (field.IsEmpty())
-		return;
-	if (!field->IsExternal())
-		return;
-	Local<External> external = field.As<External>();
-	hxFinalizer userFinalizer = (hxFinalizer)external->Value();
-	if (userFinalizer)
-		userFinalizer(arg1);
-	object->SetInternalField(AF_PAYLOAD, Null(isolate));
-	object->SetInternalField(AF_FINALIZER, Null(isolate));
+	Isolate* isolate = data.GetIsolate();
+	DeleteWeakData(isolate, weakData);
 }
 
 int hxcpp_alloc_kind()
@@ -332,8 +305,6 @@ TmpHandle * v8_alloc_abstract(vkind arg1, void * arg2)
 	object->SetInternalField(AF_KIND, Int32::New(isolate, (int32_t)arg1));
 	object->SetInternalField(AF_PAYLOAD, External::New(isolate, arg2));
 
-	SetWeakHandleData(isolate, object, gc_AbstractData);
-
 	return NewHandlePointer(isolate, scope.Escape(object));
 }
 
@@ -348,7 +319,15 @@ void v8_free_abstract(TmpHandle * arg1)
 	HandleScope scope(isolate);
 	Local<Object> object = handle->value->ToObject();
 	object->SetInternalField(AF_PAYLOAD, Null(isolate));
-	object->SetInternalField(AF_FINALIZER, Null(isolate));
+
+	Local<Value> field = object->GetInternalField(AF_WEAKDATA);
+	if (field.IsEmpty())
+		return;
+	if (!field->IsExternal())
+		return;
+	V8WeakHandleData *weakData = (V8WeakHandleData*)field.As<External>()->Value();
+	DeleteWeakData(isolate, weakData);
+	object->SetInternalField(AF_WEAKDATA, Null(isolate));
 }
 
 TmpHandle * v8_alloc_best_int(int arg1) { return v8_alloc_int(arg1); }
@@ -930,13 +909,29 @@ void v8_val_gc(TmpHandle * arg1, hxFinalizer arg2)
 		Local<Value> extField = object->GetInternalField(AF_PAYLOAD);
 		if (!extField.IsEmpty() && extField->IsExternal())
 		{
-			Local<Value> finalizerField = object->GetInternalField(AF_FINALIZER);
-			Local<External> external = finalizerField.As<External>();
-			hxFinalizer finalizer = (hxFinalizer)external->Value();
-			if (finalizer && arg2 != nullptr)
-				InternalError("val_gc - finalizer is already set");
-			else
-				object->SetInternalField(AF_FINALIZER, External::New(isolate, arg2));
+			Local<Value> weakDataField = object->GetInternalField(AF_WEAKDATA);
+			if (!weakDataField.IsEmpty() && weakDataField->IsExternal())
+			{
+				V8WeakHandleData* weakData = (V8WeakHandleData*)weakDataField.As<External>()->Value();
+				if (weakData->finalizer && arg2 != nullptr)
+					InternalError("val_gc - finalizer is already set");
+				else
+				{
+					DeleteWeakData(isolate, weakData);
+					object->SetInternalField(AF_WEAKDATA, Null(isolate));
+				}
+			}
+			else if (arg2 != nullptr)
+			{
+				V8WeakHandleData* weakData = new V8WeakHandleData(isolate, object, arg2);
+				V8HandleContainerList *list = GetV8HandleContainerList(isolate);
+				list->weakHandles.push_back(weakData);
+				weakData->it = list->weakHandles.end();
+				--weakData->it;
+				weakData->value.SetWeak(weakData, WeakCallback);
+				
+				object->SetInternalField(AF_WEAKDATA, External::New(isolate, weakData));
+			}
 		}
 		else
 			InternalError("val_gc - Tried to set finalizer to non-abstract");
