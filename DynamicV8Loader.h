@@ -52,16 +52,17 @@ void DeleteWeakData(Isolate *isolate, V8WeakHandleData *weakData)
 	delete weakData;
 }
 
-void WeakCallback(const WeakCallbackData<Value, V8WeakHandleData>& data)
+void WeakCallback(const WeakCallbackInfo<V8WeakHandleData>& data)
 {
 	V8WeakHandleData *weakData = data.GetParameter();
-	Local<Value> obj = data.GetValue();
-	TmpHandle handle(obj);
-	if (weakData->finalizer)
-		weakData->finalizer((value)&handle);
-
 	Isolate* isolate = data.GetIsolate();
-	DeleteWeakData(isolate, weakData);
+	Local<Object> obj = weakData->value.Get(isolate)->ToObject();
+	TmpHandle handle(obj);
+	weakData->finalizer((value)&handle);
+
+	Local<Value> weakDataField = obj->GetInternalField(AF_WEAKDATA);
+	if (!weakDataField.IsEmpty() && weakDataField->IsExternal())
+		DeleteWeakData(isolate, (V8WeakHandleData*)weakDataField.As<External>()->Value());
 }
 
 int hxcpp_alloc_kind()
@@ -913,7 +914,7 @@ void v8_val_gc(TmpHandle * arg1, hxFinalizer arg2)
 			if (!weakDataField.IsEmpty() && weakDataField->IsExternal())
 			{
 				V8WeakHandleData* weakData = (V8WeakHandleData*)weakDataField.As<External>()->Value();
-				if (weakData->finalizer && arg2 != nullptr)
+				if (arg2 != nullptr)
 					InternalError("val_gc - finalizer is already set");
 				else
 				{
@@ -928,7 +929,7 @@ void v8_val_gc(TmpHandle * arg1, hxFinalizer arg2)
 				list->weakHandles.push_back(weakData);
 				weakData->it = list->weakHandles.end();
 				--weakData->it;
-				weakData->value.SetWeak(weakData, WeakCallback);
+				weakData->value.SetWeak(weakData, WeakCallback, v8::WeakCallbackType::kFinalizer);
 				
 				object->SetInternalField(AF_WEAKDATA, External::New(isolate, weakData));
 			}
